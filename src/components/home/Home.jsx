@@ -5,7 +5,7 @@ import ExerciseSlider from './ExerciseSlider';
 import TrainerSlider from './TrainerSlider';
 import GymStoreSlider from './GymStoreSlider';
 import Profile from '../auth/profile';
-
+import TrainerChat from './ChatCall';
 
 const Home = () => {
   const [activeSection, setActiveSection] = useState('diet');
@@ -15,8 +15,10 @@ const Home = () => {
     { id: 'diet', label: 'Diet Plans', icon: '🥗', color: 'from-green-600 to-emerald-600' },
     { id: 'exercise', label: 'Exercises', icon: '💪', color: 'from-blue-600 to-cyan-600' },
     { id: 'trainer', label: 'Trainers', icon: '👨‍🏫', color: 'from-purple-600 to-pink-600' },
+    {id: 'chatcall', label: 'Chat & Call', icon: '💬', color: 'from-teal-600 to-lime-600' },
     { id: 'gymstore', label: 'Gym Store', icon: '🛒', color: 'from-orange-600 to-yellow-600' },
     { id: 'profile', label: 'My Profile', icon: '👤', color: 'from-indigo-600 to-violet-600' },
+    
   ];
 
   const renderActiveComponent = () => {
@@ -27,6 +29,8 @@ const Home = () => {
         return <ExerciseSlider />;
       case 'trainer':
         return <TrainerSlider />;
+      case 'chatcall':
+        return <TrainerChat />;
       case 'gymstore':
         return <GymStoreSlider />;
       case 'profile':

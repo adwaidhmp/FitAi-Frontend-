@@ -1,5 +1,4 @@
-// src/pages/TrainerProfilePage.jsx
-import React, { useEffect, useState, useMemo, } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import {
@@ -12,7 +11,6 @@ import {
   Loader2,
   AlertCircle,
   Lock,
-  Calendar,
   Target,
   Star,
   FileText,
@@ -40,10 +38,18 @@ const INFO_FIELD_CONFIG = {
 
 const PROFILE_FIELD_CONFIG = {
   bio: { label: "Bio", icon: FileText, type: "textarea" },
-  specialties: { label: "Specialties", icon: Target, type: "text" }, // comma list
-  experience_years: { label: "Experience (years)", icon: Briefcase, type: "number" },
-  hourly_rate: { label: "Hourly Rate", icon: DollarSign, type: "number" },
-  certifications: { label: "Certifications (existing shown below)", icon: Star, type: "file" }, // files handled separately
+  specialties: { label: "Specialties", icon: Target, type: "text" }, // comma list -> backend array
+  experience_years: {
+    label: "Experience (years)",
+    icon: Briefcase,
+    type: "number",
+  },
+  // hourly_rate removed because backend does not provide this field
+  certificates: {
+    label: "Certifications (existing shown below)",
+    icon: Star,
+    type: "file",
+  }, // backend uses 'certificates'
   notes: { label: "Notes", icon: FileText, type: "textarea" },
 };
 
@@ -52,25 +58,17 @@ const TAB_CONFIG = [
   { id: "profile", label: "Trainer Profile", icon: Briefcase },
 ];
 
-const FALLBACK = {
-  specialties: [],
-};
-
 const TrainerProfilePage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
   // auth slice (to guard access / show name/email)
-  const { isAuthenticated, loading: authLoading, user: _authUser } = useSelector((s) => s.auth);
+  const { isAuthenticated, loading: authLoading, user: _authUser } =
+    useSelector((s) => s.auth);
 
   // trainer slice
-  const {
-    trainerInfo,
-    profile,
-    loadingTrainerInfo,
-    loadingProfile,
-    error,
-  } = useSelector((s) => s.trainerProfile || {});
+  const { trainerInfo, profile, loadingTrainerInfo, loadingProfile, error } =
+    useSelector((s) => s.trainerProfile || {});
 
   const loading = authLoading || loadingTrainerInfo || loadingProfile;
   const _error = error;
@@ -88,7 +86,10 @@ const TrainerProfilePage = () => {
   const [newCertificates, setNewCertificates] = useState([]); // FileList -> array
   const [removedCertIds, setRemovedCertIds] = useState([]); // ids of existing certs to remove
 
-  const combined = useMemo(() => ({ ...(trainerInfo || {}), ...(profile || {}) }), [trainerInfo, profile]);
+  const combined = useMemo(
+    () => ({ ...(trainerInfo || {}), ...(profile || {}) }),
+    [trainerInfo, profile]
+  );
 
   // seed forms when data arrives
   useEffect(() => {
@@ -98,10 +99,12 @@ const TrainerProfilePage = () => {
       phone: trainerInfo?.phone || combined?.phone || "",
     });
 
+    // seed only keys present in PROFILE_FIELD_CONFIG
     const seeded = {};
     Object.keys(PROFILE_FIELD_CONFIG).forEach((k) => {
       const v = profile?.[k];
       if (Array.isArray(v)) {
+        // convert array to comma list for text inputs
         seeded[k] = v.join(", ");
       } else if (v === null || v === undefined) {
         seeded[k] = "";
@@ -109,16 +112,6 @@ const TrainerProfilePage = () => {
         seeded[k] = String(v);
       }
     });
-
-    // include any extra keys present in profile so edit shows them
-    if (profile) {
-      Object.keys(profile).forEach((k) => {
-        if (!(k in seeded)) {
-          const v = profile[k];
-          seeded[k] = Array.isArray(v) ? v.join(", ") : v ?? "";
-        }
-      });
-    }
 
     setProfileForm(seeded);
     // reset file/remove state whenever profile changes
@@ -145,13 +138,17 @@ const TrainerProfilePage = () => {
 
   const validateInfo = () => {
     const errs = {};
-    if (!infoForm.name || infoForm.name.trim().length < 2) errs.name = "Name must be at least 2 characters.";
+    if (!infoForm.name || infoForm.name.trim().length < 2)
+      errs.name = "Name must be at least 2 characters.";
     return errs;
   };
 
   const validateProfile = () => {
     const errs = {};
-    if (profileForm.experience_years && isNaN(parseFloat(profileForm.experience_years))) {
+    if (
+      profileForm.experience_years &&
+      isNaN(parseFloat(profileForm.experience_years))
+    ) {
       errs.experience_years = "Experience must be a number.";
     }
     if (profileForm.hourly_rate && isNaN(parseFloat(profileForm.hourly_rate))) {
@@ -185,7 +182,7 @@ const TrainerProfilePage = () => {
   const handleCertFiles = (e) => {
     const files = Array.from(e.target.files || []);
     setNewCertificates((p) => [...p, ...files]);
-    // reset input value (if needed) - handled in DOM if the input is uncontrolled
+    // if you want to clear the input afterwards caller must reset the input element value
   };
 
   const markRemoveCert = (certId) => {
@@ -228,36 +225,30 @@ const TrainerProfilePage = () => {
     try {
       // Build FormData (multipart)
       const fd = new FormData();
-
-      // add scalar/array fields
-      Object.keys(profileForm).forEach((k) => {
-        if (k === "certifications") return; // handled via files and existing list
+      // add scalar/array fields, but only for PROFILE_FIELD_CONFIG keys
+      Object.keys(PROFILE_FIELD_CONFIG).forEach((k) => {
+        if (k === "certificates") return; // files handled separately
         const val = profileForm[k];
         if (k === "specialties") {
           const list = toList(val);
-          // send as JSON string or server may accept repeated keys; using JSON string for safety
           fd.append(k, JSON.stringify(list));
         } else if (PROFILE_FIELD_CONFIG[k]?.type === "number") {
           fd.append(k, val === "" ? "" : String(val));
-        } else if (k === "notes" || PROFILE_FIELD_CONFIG[k]?.type === "textarea") {
-          fd.append(k, val || "");
         } else {
-          fd.append(k, val === "" ? "" : String(val));
+          fd.append(k, val == null ? "" : String(val));
         }
       });
 
-      // attach new certificate files
+      // attach new certificate files using 'certificates' key
       newCertificates.forEach((file) => {
-        // backend should accept 'certificates' as multiple file field
         fd.append("certificates", file);
       });
 
-      // if any cert IDs marked for removal, append as JSON string
+      // send removed cert ids if any
       if (removedCertIds.length) {
         fd.append("remove_cert_ids", JSON.stringify(removedCertIds));
       }
 
-      // call updateTrainerProfile (expects multipart)
       const res = await dispatch(updateTrainerProfile(fd)).unwrap();
       console.log("Trainer profile updated", res);
       await dispatch(fetchTrainerProfile());
@@ -305,7 +296,9 @@ const TrainerProfilePage = () => {
                 key={t.id}
                 onClick={() => setActiveTab(t.id)}
                 className={`w-full text-left flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                  activeTab === t.id ? "bg-linear-to-r from-purple-900/50 to-pink-900/50 text-white border border-purple-700/30" : "text-gray-400 hover:text-white hover:bg-gray-800"
+                  activeTab === t.id
+                    ? "bg-linear-to-r from-purple-900/50 to-pink-900/50 text-white border border-purple-700/30"
+                    : "text-gray-400 hover:text-white hover:bg-gray-800"
                 }`}
               >
                 <t.icon className="w-5 h-5" />
@@ -317,8 +310,9 @@ const TrainerProfilePage = () => {
           <div className="mt-6">
             <button
               onClick={() => {
-                dispatch(logoutUser())
-                navigate("/reset-password")}}
+                dispatch(logoutUser());
+                navigate("/reset-password");
+              }}
               className="w-full flex items-center gap-2 px-4 py-3 bg-blue-900/30 hover:bg-blue-900/50 text-blue-300 rounded-xl border border-blue-700/30"
             >
               <Lock className="w-4 h-4" />
@@ -330,8 +324,8 @@ const TrainerProfilePage = () => {
             <button
               onClick={() => {
                 dispatch(logoutUser());
-                navigate("/login")
-              } }
+                navigate("/login");
+              }}
               className="w-full flex items-center gap-2 px-4 py-3 bg-blue-900/30 hover:bg-blue-900/50 text-blue-300 rounded-xl border border-blue-700/30"
             >
               <Lock className="w-4 h-4" />
@@ -460,10 +454,42 @@ const TrainerProfilePage = () => {
                   const displayValue = profile?.[fieldKey];
                   const formValue = profileForm[fieldKey] ?? "";
 
+                  // show certificate thumbnails in read-only view
+                  if (!isEditingProfile && fieldKey === "certificates") {
+                    const certs = Array.isArray(displayValue) ? displayValue : [];
+                    return (
+                      <div key={fieldKey} className="col-span-full">
+                        <label className="text-xs text-gray-400 block mb-1">{cfg.label}</label>
+                        <div className="flex flex-wrap gap-3">
+                          {certs.length ? certs.map((c) => (
+                            <a key={c.id} href={c.file_url || '#'} target="_blank" rel="noreferrer" className="block w-40">
+                              <img src={c.file_url} alt={c.filename || 'certificate'} className="w-full h-28 object-cover rounded-lg border border-gray-700" />
+                              <div className="text-xs truncate mt-1 text-gray-300">{c.filename}</div>
+                            </a>
+                          )) : <div className="text-xs text-gray-400">Not set</div>}
+                        </div>
+                      </div>
+                    );
+                  }
+
                   // non-edit view
                   if (!isEditingProfile) {
                     let shown = displayValue;
-                    if (fieldKey === "specialties") shown = Array.isArray(displayValue) ? (displayValue.length ? displayValue.join(", ") : "Not set") : (displayValue || "Not set");
+                    if (fieldKey === "specialties")
+                      shown = Array.isArray(displayValue)
+                        ? displayValue.length
+                          ? displayValue.join(", ")
+                          : "Not set"
+                        : displayValue || "Not set";
+
+                    // certificates: show filenames or count
+                    if (fieldKey === "certificates") {
+                      const certs = Array.isArray(displayValue) ? displayValue : [];
+                      shown = certs.length
+                        ? certs.map((c) => c.filename || c.file_url || "Certificate").join(", ")
+                        : "Not set";
+                    }
+
                     if (cfg.type === "number") shown = displayValue ?? "Not set";
                     if (cfg.type === "textarea") shown = displayValue || "Not set";
                     if (shown === null || shown === undefined || shown === "") shown = "Not set";
@@ -492,20 +518,21 @@ const TrainerProfilePage = () => {
                     );
                   }
 
-                  if (cfg.type === "file" && fieldKey === "certifications") {
+                  // file input/rendering for certificates (important fix: check 'certificates')
+                  if (cfg.type === "file" && fieldKey === "certificates") {
                     return (
                       <div key={fieldKey} className="col-span-full">
                         <label className="text-xs text-gray-400 block mb-1">{cfg.label}</label>
 
                         {/* existing certificates list with remove toggle */}
                         <div className="space-y-2 mb-3">
-                          {(profile?.certifications || []).map((c) => {
+                          {(profile?.certificates || []).map((c) => {
                             const isRemoved = removedCertIds.includes(c.id);
                             return (
                               <div key={c.id} className="flex items-center justify-between bg-gray-800 px-3 py-2 rounded-lg">
                                 <div>
-                                  <div className="font-semibold">{c.title || c.filename || "Certificate"}</div>
-                                  <a href={c.file || "#"} target="_blank" rel="noreferrer" className="text-xs text-blue-300 underline">{c.filename || "View file"}</a>
+                                  <div className="font-semibold">{c.filename || c.file_url || "Certificate"}</div>
+                                  <a href={c.file_url || '#'} target="_blank" rel="noreferrer" className="text-xs text-blue-300 underline">View file</a>
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <button onClick={() => markRemoveCert(c.id)} className={`px-3 py-1 rounded text-xs ${isRemoved ? "bg-red-600 text-white" : "bg-gray-700 text-gray-200"}`}>
@@ -543,13 +570,7 @@ const TrainerProfilePage = () => {
                   return (
                     <div key={fieldKey}>
                       <label className="text-xs text-gray-400 block mb-1">{cfg.label}</label>
-                      <input
-                        name={fieldKey}
-                        value={formValue}
-                        onChange={handleProfileChange}
-                        type={cfg.type === "number" ? "number" : "text"}
-                        className={`w-full px-3 py-2 rounded-lg bg-gray-800 border ${formErrors[fieldKey] ? "border-red-500" : "border-gray-700"} text-xs`}
-                      />
+                      <input name={fieldKey} value={formValue} onChange={handleProfileChange} type={cfg.type === "number" ? "number" : "text"} className={`w-full px-3 py-2 rounded-lg bg-gray-800 border ${formErrors[fieldKey] ? "border-red-500" : "border-gray-700"} text-xs`} />
                       {formErrors[fieldKey] && <p className="text-red-400 text-xs mt-1">{formErrors[fieldKey]}</p>}
                     </div>
                   );
@@ -569,9 +590,7 @@ const TrainerProfilePage = () => {
               <div className="font-semibold">Trainer Profile Error</div>
               <div className="text-red-200">{typeof _error === "string" ? _error : JSON.stringify(_error)}</div>
               <div className="mt-2">
-                <button onClick={() => dispatch(clearTrainerErrors())} className="text-xs text-red-300 underline">
-                  Dismiss
-                </button>
+                <button onClick={() => dispatch(clearTrainerErrors())} className="text-xs text-red-300 underline">Dismiss</button>
               </div>
             </div>
           </div>

@@ -25,7 +25,7 @@ const Signup = () => {
 
   useEffect(() => {
     if (isAuthenticated && user) {
-      navigate('/dashboard');
+      navigate('/home');
     }
   }, [isAuthenticated, user, navigate]);
 

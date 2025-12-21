@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import {
   Dumbbell,
   Eye,
@@ -28,6 +28,7 @@ const Login = () => {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const { loading, error } = useSelector((state) => state.auth);
 
@@ -37,7 +38,8 @@ const Login = () => {
       setIsGoogleLoading(true);
       try {
         await dispatch(googleLogin({ id_token: response.credential })).unwrap();
-        navigate("/home", { replace: true });
+        const from = location.state?.from?.pathname || "/home";
+        navigate(from, { replace: true });
         console.log("Google login successful");
       } catch (err) {
         console.error("Google login failed:", err);
@@ -45,7 +47,7 @@ const Login = () => {
         setIsGoogleLoading(false);
       }
     },
-    [dispatch, navigate]
+    [dispatch, navigate, location]
   );
 
   useEffect(() => {
@@ -109,31 +111,37 @@ const Login = () => {
       .required("Password is required"),
   });
 
-const formik = useFormik({
-  initialValues: { email: "", password: "" },
-  validationSchema,
-  onSubmit: async (values) => {
-    try {
-      // unwrap() resolves to the fulfilled payload returned by your thunk
-      const payload = await dispatch(loginUser(values)).unwrap();
-      console.log("login thunk payload:", payload);
+  const formik = useFormik({
+    initialValues: {
+      email: "",
+      password: "",
+    },
+    validationSchema,
+    onSubmit: async (values) => {
+      try {
+        const { user } = await dispatch(loginUser(values)).unwrap();
 
-      // payload must include role; if it doesn't, inspect the console output and fix thunk
-      const role = payload?.role || payload?.user?.role;
-      if (role === "trainer") {
-        navigate("/trainer-home");
-      } else {
-        navigate("/home");
+        if (!user || !user.role) {
+          throw new Error("Invalid login response: role missing");
+        }
+
+        if (user.role === "admin") {
+          navigate("/admin/dashboard", { replace: true });
+        } else if (user.role === "trainer") {
+          navigate("/trainer-home", { replace: true });
+        } else {
+          navigate("/home", { replace: true });
+        }
+      } catch (err) {
+        console.error("Login failed:", err);
+        // show error message here
       }
-    } catch (err) {
-      console.error("Login failed:", err);
-      // handle error UI...
-    }
-  },
-});
+    },
+  });
+
 
   return (
-    <div className="h-screen bg-black text-white overflow-hidden">
+    <div className="min-h-screen bg-black text-white overflow-auto">
       {/* Main Split Layout - No scrolling */}
       <div className="h-full flex flex-col lg:flex-row">
         {/* Left Column - Login Form */}
@@ -188,11 +196,10 @@ const formik = useFormik({
                     value={formik.values.email}
                     onChange={formik.handleChange}
                     onBlur={formik.handleBlur}
-                    className={`w-full px-3 py-2 text-sm bg-gray-800 border ${
-                      formik.touched.email && formik.errors.email
+                    className={`w-full px-3 py-2 text-sm bg-gray-800 border ${formik.touched.email && formik.errors.email
                         ? "border-red-500"
                         : "border-gray-700"
-                    } rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed`}
+                      } rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed`}
                     placeholder="Enter your email"
                     disabled={loading}
                   />
@@ -217,11 +224,10 @@ const formik = useFormik({
                       value={formik.values.password}
                       onChange={formik.handleChange}
                       onBlur={formik.handleBlur}
-                      className={`w-full px-3 py-2 text-sm pr-10 bg-gray-800 border ${
-                        formik.touched.password && formik.errors.password
+                      className={`w-full px-3 py-2 text-sm pr-10 bg-gray-800 border ${formik.touched.password && formik.errors.password
                           ? "border-red-500"
                           : "border-gray-700"
-                      } rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed`}
+                        } rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed`}
                       placeholder="Enter your password"
                       disabled={loading}
                     />
@@ -295,9 +301,8 @@ const formik = useFormik({
               <div className="mb-4">
                 <div
                   id="googleSignInButton"
-                  className={`w-full ${
-                    isGoogleLoading ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
+                  className={`w-full ${isGoogleLoading ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
                 >
                   {isGoogleLoading && (
                     <div className="flex items-center justify-center py-2.5 bg-gray-800 rounded-lg">
@@ -449,11 +454,6 @@ const formik = useFormik({
         }
         .animate-fadeIn {
           animation: fadeIn 0.3s ease-in-out;
-        }
-        
-        /* Disable scrolling globally for this page */
-        body {
-          overflow: hidden !important;
         }
       `}</style>
     </div>
