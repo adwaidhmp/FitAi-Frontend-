@@ -3,11 +3,9 @@ import { useDispatch, useSelector } from "react-redux";
 import { Flame, TrendingUp, Calendar, Weight, AlertCircle } from "lucide-react";
 
 import {
-  fetchDailyCalories,
-  fetchWeeklyProgress,
-  fetchMonthlyCalories,
-  fetchMonthlyWeight,
-  fetchMonthlyCauseAnalysis,
+  fetchDailyAnalytics,
+  fetchWeeklyAnalytics,
+  fetchMonthlyAnalytics,
   clearDietAnalytics,
 } from "../../redux/user_slices/dietAnalyticsSlice";
 
@@ -46,11 +44,9 @@ const DietProgress = () => {
   const { loading, error } = diet;
 
   useEffect(() => {
-    dispatch(fetchDailyCalories());
-    dispatch(fetchWeeklyProgress());
-    dispatch(fetchMonthlyCalories());
-    dispatch(fetchMonthlyWeight());
-    dispatch(fetchMonthlyCauseAnalysis());
+    dispatch(fetchDailyAnalytics());
+    dispatch(fetchWeeklyAnalytics());
+    dispatch(fetchMonthlyAnalytics());
 
     return () => {
       dispatch(clearDietAnalytics());
