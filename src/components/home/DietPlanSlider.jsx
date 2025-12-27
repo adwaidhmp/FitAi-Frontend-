@@ -10,6 +10,7 @@ import { message } from "antd";
 
 import {
   fetchCurrentDietPlan,
+  fetchTodayMealStatus, // ✅ IMPORTANT
   generateDietPlan,
   followMealFromPlan,
   skipMeal,
@@ -34,11 +35,15 @@ const DietPlanSlider = () => {
   const [extraMeal, setExtraMeal] = useState("");
 
   /* ============================
-     LOAD CURRENT PLAN
+     LOAD DATA (PLAN + TODAY STATUS)
   ============================ */
   useEffect(() => {
     dispatch(fetchCurrentDietPlan());
-    return () => dispatch(clearDietActionState());
+    dispatch(fetchTodayMealStatus()); // 🔥 THIS FIXES REFRESH ISSUE
+
+    return () => {
+      dispatch(clearDietActionState());
+    };
   }, [dispatch]);
 
   /* ============================
@@ -74,8 +79,7 @@ const DietPlanSlider = () => {
   }, [currentPlan]);
 
   /* ============================
-     DERIVED CUSTOM MEALS STATE
-     (NO EFFECT, NO WARNING)
+     CUSTOM MEALS STATE
   ============================ */
   const initialCustomMeals = useMemo(() => {
     if (!dietPlan?.meals) return {};
@@ -86,7 +90,6 @@ const DietPlanSlider = () => {
 
   const [customMeals, setCustomMeals] = useState(initialCustomMeals);
 
-  // reset ONLY when plan changes
   useEffect(() => {
     setCustomMeals(initialCustomMeals);
   }, [initialCustomMeals]);
@@ -183,7 +186,7 @@ const DietPlanSlider = () => {
       {/* Meals */}
       <div className="space-y-4">
         {dietPlan.meals.map((meal) => {
-          const locked = mealStatus[meal.meal_type] !== null;
+          const locked = mealStatus?.[meal.meal_type] !== null;
 
           return (
             <div
@@ -245,7 +248,7 @@ const DietPlanSlider = () => {
                   placeholder={
                     locked
                       ? `${meal.display_name} already logged`
-                      : `Log custom ${meal.display_name.toLowerCase()}`
+                      : `Log custom ${meal.display_name.toLowerCase()} separated by comma`
                   }
                   className="flex-1 bg-gray-800 rounded-md px-3 py-2 text-sm disabled:opacity-50"
                 />
@@ -269,7 +272,7 @@ const DietPlanSlider = () => {
           <input
             value={extraMeal}
             onChange={(e) => setExtraMeal(e.target.value)}
-            placeholder="Log extra food (any time)"
+            placeholder="Log extra food separated by comma"
             className="flex-1 bg-gray-800 rounded-md px-3 py-2 text-sm"
           />
           <button

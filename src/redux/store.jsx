@@ -7,7 +7,7 @@ import trainerBookingReducer from "./user_slices/trainerBookingSlice.jsx";
 import trainerBookingApprovalReducer from "./trainer_slices/trainerBookingApprovalSlice.jsx";
 import dietActionsReducer from "./user_slices/dietActionsSlice.jsx";
 import dietAnalyticsReducer from "./user_slices/dietAnalyticsSlice.jsx";
-
+import workoutSliceReducer from "./user_slices/workoutSlice.jsx"
 export const store = configureStore({
   reducer: {
     auth: authReducer,
@@ -18,5 +18,6 @@ export const store = configureStore({
     trainerBookingApproval: trainerBookingApprovalReducer,
     dietActions: dietActionsReducer,
     dietAnalytics: dietAnalyticsReducer,
+    workout: workoutSliceReducer,
   },
 });

@@ -5,6 +5,7 @@ import api from "../../api2.jsx";
    THUNKS
 ============================ */
 
+/* ---- CURRENT PLAN ---- */
 export const fetchCurrentDietPlan = createAsyncThunk(
   "dietActions/fetchCurrentDietPlan",
   async (_, { rejectWithValue }) => {
@@ -20,6 +21,20 @@ export const fetchCurrentDietPlan = createAsyncThunk(
   }
 );
 
+/* ---- TODAY MEAL STATUS (NEW) ---- */
+export const fetchTodayMealStatus = createAsyncThunk(
+  "dietActions/fetchTodayMealStatus",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await api.get("diet/today/");
+      return res.data.meals;
+    } catch {
+      return rejectWithValue("Failed to fetch today meal status");
+    }
+  }
+);
+
+/* ---- GENERATE PLAN ---- */
 export const generateDietPlan = createAsyncThunk(
   "dietActions/generateDietPlan",
   async (_, { rejectWithValue }) => {
@@ -32,6 +47,7 @@ export const generateDietPlan = createAsyncThunk(
   }
 );
 
+/* ---- MEAL ACTIONS ---- */
 export const followMealFromPlan = createAsyncThunk(
   "dietActions/followMealFromPlan",
   async ({ meal_type }, { rejectWithValue }) => {
@@ -71,6 +87,7 @@ export const skipMeal = createAsyncThunk(
   }
 );
 
+/* ---- EXTRA MEAL ---- */
 export const logExtraMeal = createAsyncThunk(
   "dietActions/logExtraMeal",
   async ({ food_text }, { rejectWithValue }) => {
@@ -83,6 +100,7 @@ export const logExtraMeal = createAsyncThunk(
   }
 );
 
+/* ---- WEIGHT ---- */
 export const updateWeight = createAsyncThunk(
   "dietActions/updateWeight",
   async (payload, { rejectWithValue }) => {
@@ -102,12 +120,16 @@ export const updateWeight = createAsyncThunk(
 const initialState = {
   loading: false,
   error: null,
+
   currentPlan: null,
+
+  // SOURCE OF TRUTH FOR UI LOCKING
   mealStatus: {
     breakfast: null,
     lunch: null,
     dinner: null,
   },
+
   lastResponse: null,
 };
 
@@ -120,18 +142,11 @@ const dietActionsSlice = createSlice({
       state.error = null;
       state.lastResponse = null;
     },
-    resetMealStatus(state) {
-      state.mealStatus = {
-        breakfast: null,
-        lunch: null,
-        dinner: null,
-      };
-    },
   },
   extraReducers: (builder) => {
-    /* ---- ALL addCase FIRST ---- */
-
     builder
+
+      /* ---------- CURRENT PLAN ---------- */
       .addCase(fetchCurrentDietPlan.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -146,6 +161,12 @@ const dietActionsSlice = createSlice({
         state.error = action.payload;
       })
 
+      /* ---------- TODAY STATUS (CRITICAL) ---------- */
+      .addCase(fetchTodayMealStatus.fulfilled, (state, action) => {
+        state.mealStatus = action.payload;
+      })
+
+      /* ---------- GENERATE PLAN ---------- */
       .addCase(generateDietPlan.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -153,6 +174,8 @@ const dietActionsSlice = createSlice({
       .addCase(generateDietPlan.fulfilled, (state, action) => {
         state.loading = false;
         state.currentPlan = action.payload;
+
+        // reset only because new plan means new day context
         state.mealStatus = {
           breakfast: null,
           lunch: null,
@@ -164,9 +187,11 @@ const dietActionsSlice = createSlice({
         state.error = action.payload;
       })
 
+      /* ---------- WEIGHT ---------- */
       .addCase(updateWeight.fulfilled, (state, action) => {
         state.loading = false;
         state.lastResponse = action.payload;
+
         if (action.payload?.new_plan) {
           state.currentPlan = action.payload.new_plan;
           state.mealStatus = {
@@ -177,28 +202,30 @@ const dietActionsSlice = createSlice({
         }
       })
 
+      /* ---------- EXTRA MEAL ---------- */
       .addCase(logExtraMeal.fulfilled, (state, action) => {
         state.loading = false;
         state.lastResponse = action.payload;
       })
 
-      /* ---- addMatcher LAST ---- */
-
+      /* ---------- MEAL ACTIONS ---------- */
       .addMatcher(
         (action) =>
-          action.type.endsWith("/fulfilled") &&
           [
             followMealFromPlan.fulfilled.type,
             logCustomMeal.fulfilled.type,
             skipMeal.fulfilled.type,
           ].includes(action.type),
         (state, action) => {
-          state.loading = false;
           const { meal_type, source } = action.payload;
+
+          // optimistic update (backend already enforced uniqueness)
           state.mealStatus[meal_type] = source;
           state.lastResponse = action.payload;
         }
       )
+
+      /* ---------- ERRORS ---------- */
       .addMatcher(
         (action) =>
           action.type.startsWith("dietActions/") &&
@@ -211,7 +238,5 @@ const dietActionsSlice = createSlice({
   },
 });
 
-export const { clearDietActionState, resetMealStatus } =
-  dietActionsSlice.actions;
-
+export const { clearDietActionState } = dietActionsSlice.actions;
 export default dietActionsSlice.reducer;
