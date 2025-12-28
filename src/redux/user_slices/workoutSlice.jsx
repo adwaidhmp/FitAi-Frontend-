@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../../api2.jsx";
+import { loginUser, googleLogin, logoutUser } from "./authSlice";
 
 /* ============================
    THUNKS
@@ -173,6 +174,23 @@ const workoutSlice = createSlice({
       .addCase(logWorkoutExercise.rejected, (state, action) => {
         state.logging = false;
         state.error = action.payload;
+      })
+
+      // Clear workout data on login/logout to prevent showing previous user's data
+      .addCase(loginUser.fulfilled, (state) => {
+        state.plan = null;
+        state.loggedExercises = {};
+        state.error = null;
+      })
+      .addCase(googleLogin.fulfilled, (state) => {
+        state.plan = null;
+        state.loggedExercises = {};
+        state.error = null;
+      })
+      .addCase(logoutUser.fulfilled, (state) => {
+        state.plan = null;
+        state.loggedExercises = {};
+        state.error = null;
       });
   },
 });

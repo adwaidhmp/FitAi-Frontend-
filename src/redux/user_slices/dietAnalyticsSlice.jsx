@@ -1,116 +1,140 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import api from "../../api2.jsx";
+import api2 from "../../api2";
 
-/* ============================
+/* ======================================================
    THUNKS
-============================ */
+====================================================== */
 
-export const fetchDailyAnalytics = createAsyncThunk(
-  "dietAnalytics/fetchDailyAnalytics",
-  async (date, { rejectWithValue }) => {
+export const fetchDailyProgress = createAsyncThunk(
+  "progress/fetchDaily",
+  async (date = null, { rejectWithValue }) => {
     try {
-      const res = await api.get("diet/analytics/daily/", {
-        params: date ? { date } : {},
-      });
-      return res.data;
-    } catch {
-      return rejectWithValue("Failed to fetch daily analytics");
+      const params = date ? { date } : {};
+      const res = await api2.get("progress/daily/", { params });
+      return res.data.data; // ✅ unwrap
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data?.detail || "Failed to load daily progress"
+      );
     }
   }
 );
 
-export const fetchWeeklyAnalytics = createAsyncThunk(
-  "dietAnalytics/fetchWeeklyAnalytics",
-  async (_, { rejectWithValue }) => {
+export const fetchWeeklyProgress = createAsyncThunk(
+  "progress/fetchWeekly",
+  async (weekStart = null, { rejectWithValue }) => {
     try {
-      const res = await api.get("diet/analytics/weekly/");
-      return res.data;
-    } catch {
-      return rejectWithValue("Failed to fetch weekly analytics");
+      const params = weekStart ? { week_start: weekStart } : {};
+      const res = await api2.get("progress/weekly/", { params });
+      return res.data.data; // ✅ unwrap
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data?.detail || "Failed to load weekly progress"
+      );
     }
   }
 );
 
-export const fetchMonthlyAnalytics = createAsyncThunk(
-  "dietAnalytics/fetchMonthlyAnalytics",
-  async ({ year, month }, { rejectWithValue }) => {
+export const fetchMonthlyProgress = createAsyncThunk(
+  "progress/fetchMonthly",
+  async ({ year, month } = {}, { rejectWithValue }) => {
     try {
-      const res = await api.get("diet/analytics/monthly/", {
-        params: { year, month },
-      });
-      return res.data;
-    } catch {
-      return rejectWithValue("Failed to fetch monthly analytics");
+      const params = {};
+      if (year) params.year = year;
+      if (month) params.month = month;
+
+      const res = await api2.get("progress/monthly/", { params });
+      return res.data.data; // ✅ unwrap
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data?.detail || "Failed to load monthly progress"
+      );
     }
   }
 );
 
-/* ============================
+/* ======================================================
    SLICE
-============================ */
+====================================================== */
 
 const initialState = {
   daily: null,
   weekly: null,
   monthly: null,
-  loading: false,
-  error: null,
+
+  loading: {
+    daily: false,
+    weekly: false,
+    monthly: false,
+  },
+
+  error: {
+    daily: null,
+    weekly: null,
+    monthly: null,
+  },
 };
 
-const dietAnalyticsSlice = createSlice({
-  name: "dietAnalytics",
+const progressSlice = createSlice({
+  name: "progress",
   initialState,
   reducers: {
-    clearDietAnalytics(state) {
+    clearProgress(state) {
       state.daily = null;
       state.weekly = null;
       state.monthly = null;
-      state.loading = false;
-      state.error = null;
+
+      state.error.daily = null;
+      state.error.weekly = null;
+      state.error.monthly = null;
     },
   },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchDailyAnalytics.pending, (state) => {
-        state.loading = true;
-        state.error = null;
+
+      /* ---------------- DAILY ---------------- */
+      .addCase(fetchDailyProgress.pending, (state) => {
+        state.loading.daily = true;
+        state.error.daily = null;
       })
-      .addCase(fetchDailyAnalytics.fulfilled, (state, action) => {
-        state.loading = false;
+      .addCase(fetchDailyProgress.fulfilled, (state, action) => {
+        state.loading.daily = false;
         state.daily = action.payload;
       })
-      .addCase(fetchDailyAnalytics.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
+      .addCase(fetchDailyProgress.rejected, (state, action) => {
+        state.loading.daily = false;
+        state.error.daily = action.payload;
       })
 
-      .addCase(fetchWeeklyAnalytics.pending, (state) => {
-        state.loading = true;
-        state.error = null;
+      /* ---------------- WEEKLY ---------------- */
+      .addCase(fetchWeeklyProgress.pending, (state) => {
+        state.loading.weekly = true;
+        state.error.weekly = null;
       })
-      .addCase(fetchWeeklyAnalytics.fulfilled, (state, action) => {
-        state.loading = false;
+      .addCase(fetchWeeklyProgress.fulfilled, (state, action) => {
+        state.loading.weekly = false;
         state.weekly = action.payload;
       })
-      .addCase(fetchWeeklyAnalytics.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
+      .addCase(fetchWeeklyProgress.rejected, (state, action) => {
+        state.loading.weekly = false;
+        state.error.weekly = action.payload;
       })
 
-      .addCase(fetchMonthlyAnalytics.pending, (state) => {
-        state.loading = true;
-        state.error = null;
+      /* ---------------- MONTHLY ---------------- */
+      .addCase(fetchMonthlyProgress.pending, (state) => {
+        state.loading.monthly = true;
+        state.error.monthly = null;
       })
-      .addCase(fetchMonthlyAnalytics.fulfilled, (state, action) => {
-        state.loading = false;
+      .addCase(fetchMonthlyProgress.fulfilled, (state, action) => {
+        state.loading.monthly = false;
         state.monthly = action.payload;
       })
-      .addCase(fetchMonthlyAnalytics.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
+      .addCase(fetchMonthlyProgress.rejected, (state, action) => {
+        state.loading.monthly = false;
+        state.error.monthly = action.payload;
       });
   },
 });
 
-export const { clearDietAnalytics } = dietAnalyticsSlice.actions;
-export default dietAnalyticsSlice.reducer;
+export const { clearProgress } = progressSlice.actions;
+export default progressSlice.reducer;

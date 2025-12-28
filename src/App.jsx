@@ -12,7 +12,7 @@ import ProfilePage from "./components/auth/profile";
 import Home from "./components/home/Home";
 import DietPlanSlider from "./components/home/DietPlanSlider";
 import ExerciseSlider from "./components/home/ExerciseSlider";
-import DietProgress from "./components/home/DietProgress";
+import ProgressDashboard from "./components/home/ProgressDashboard";
 import TrainerSlider from "./components/home/TrainerSlider";
 import LandingPage from "./components/landing";
 import ForgotPasswordRequest from "./components/auth/ForgotPasswordRequest";
@@ -58,7 +58,7 @@ function App() {
           <Route path="home/" element={<Home />}>
             <Route index element={<HomeLanding />} />
             <Route path="diet" element={<DietPlanSlider />} />
-            <Route path="diet-progress" element={<DietProgress />} />
+            <Route path="progress-dashboard" element={<ProgressDashboard />} />
             <Route path="exercise" element={<ExerciseSlider />} />
             <Route path="trainer" element={<TrainerSlider />} />
             <Route path="chat-call" element={<TrainerChat />} />

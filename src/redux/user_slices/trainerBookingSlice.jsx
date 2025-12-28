@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../../api2";
+import { loginUser, googleLogin, logoutUser } from "./authSlice";
 
 /* -------------------------------------------
    THUNKS
@@ -143,6 +144,26 @@ const trainerBookingSlice = createSlice({
       .addCase(removeTrainer.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+
+      // Clear trainer booking data on login/logout to prevent showing previous user's data
+      .addCase(loginUser.fulfilled, (state) => {
+        state.approvedTrainers = [];
+        state.myTrainers = [];
+        state.error = null;
+        state.actionSuccess = null;
+      })
+      .addCase(googleLogin.fulfilled, (state) => {
+        state.approvedTrainers = [];
+        state.myTrainers = [];
+        state.error = null;
+        state.actionSuccess = null;
+      })
+      .addCase(logoutUser.fulfilled, (state) => {
+        state.approvedTrainers = [];
+        state.myTrainers = [];
+        state.error = null;
+        state.actionSuccess = null;
       });
   },
 });

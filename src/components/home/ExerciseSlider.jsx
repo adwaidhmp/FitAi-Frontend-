@@ -4,8 +4,9 @@ import {
   Timer,
   Target,
   Zap,
-  ChevronRight,
   TrendingUp,
+  CheckCircle,
+  XCircle,
 } from "lucide-react";
 
 import {
@@ -25,13 +26,13 @@ const WORKOUT_CHOICES = [
 const ExerciseSlider = () => {
   const dispatch = useDispatch();
   const [selectedType, setSelectedType] = useState(null);
+  const [needsRefresh, setNeedsRefresh] = useState(false);
 
   const {
     plan = null,
     loading = false,
     error = null,
     loggedExercises = {},
-    logging = false,
     generating = false,
   } = useSelector((state) => state.workout || {});
 
@@ -56,28 +57,7 @@ const ExerciseSlider = () => {
   }
 
   /* =========================
-     GENERATING STATE
-  ========================= */
-  if (generating) {
-    return (
-      <div className="bg-gray-900/50 border border-gray-800 rounded-2xl p-8 text-center">
-        <div className="flex justify-center mb-4">
-          <div className="p-4 bg-blue-600 rounded-2xl animate-pulse">
-            <Zap className="w-8 h-8" />
-          </div>
-        </div>
-        <h3 className="text-2xl font-bold mb-2">
-          Generating Workout Plan
-        </h3>
-        <p className="text-gray-400">
-          This takes a few seconds. Do not refresh.
-        </p>
-      </div>
-    );
-  }
-
-  /* =========================
-     NO WORKOUT YET (CHOICES)
+     NO PLAN / GENERATE FLOW
   ========================= */
   if (!plan) {
     return (
@@ -89,37 +69,55 @@ const ExerciseSlider = () => {
         </div>
 
         <h3 className="text-2xl font-bold mb-2">
-          Choose Your Workout Style
+          {needsRefresh ? "Workout Ready" : "Choose Your Workout Style"}
         </h3>
+
         <p className="text-gray-400 mb-6">
-          Select a workout type and generate your weekly plan.
+          {needsRefresh
+            ? "Workout generated successfully. Refresh to load it."
+            : "Select a workout type and generate your weekly plan."}
         </p>
 
-        {/* Choices */}
-        <div className="flex justify-center gap-3 mb-6">
-          {WORKOUT_CHOICES.map((choice) => (
-            <button
-              key={choice.value}
-              onClick={() => setSelectedType(choice.value)}
-              className={`px-4 py-2 rounded-xl border text-sm font-semibold transition ${
-                selectedType === choice.value
-                  ? "bg-blue-600 border-blue-500"
-                  : "bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700"
-              }`}
-            >
-              {choice.label}
-            </button>
-          ))}
-        </div>
+        {!needsRefresh && (
+          <div className="flex justify-center gap-3 mb-6">
+            {WORKOUT_CHOICES.map((choice) => (
+              <button
+                key={choice.value}
+                onClick={() => setSelectedType(choice.value)}
+                className={`px-4 py-2 rounded-xl border text-sm font-semibold ${
+                  selectedType === choice.value
+                    ? "bg-blue-600 border-blue-500"
+                    : "bg-gray-800 border-gray-700 text-gray-300"
+                }`}
+              >
+                {choice.label}
+              </button>
+            ))}
+          </div>
+        )}
 
-        {/* Generate */}
-        <button
-          disabled={!selectedType}
-          onClick={() => dispatch(generateWorkout(selectedType))}
-          className="px-6 py-3 bg-blue-600 rounded-xl font-semibold disabled:opacity-50"
-        >
-          Generate Workout
-        </button>
+        {!needsRefresh ? (
+          <button
+            disabled={!selectedType || generating}
+            onClick={async () => {
+              await dispatch(generateWorkout(selectedType));
+              setNeedsRefresh(true);
+            }}
+            className="px-6 py-3 bg-blue-600 rounded-xl font-semibold disabled:opacity-50"
+          >
+            Generate Workout
+          </button>
+        ) : (
+          <button
+            onClick={() => {
+              dispatch(fetchCurrentWorkout());
+              setNeedsRefresh(false);
+            }}
+            className="px-6 py-3 bg-green-600 rounded-xl font-semibold"
+          >
+            Refresh Workout
+          </button>
+        )}
       </div>
     );
   }
@@ -127,16 +125,16 @@ const ExerciseSlider = () => {
   /* =========================
      SAFE SESSION ACCESS
   ========================= */
-  const session = plan?.sessions?.sessions?.[0];
-  if (!session) {
+  const session = plan.sessions?.sessions?.[0];
+  const exercises = session?.exercises || [];
+
+  if (!session || exercises.length === 0) {
     return (
       <div className="text-gray-400">
-        Workout plan exists but no sessions found.
+        Workout exists but no exercises found.
       </div>
     );
   }
-
-  const exercises = session.exercises || [];
 
   /* =========================
      HANDLERS
@@ -178,25 +176,27 @@ const ExerciseSlider = () => {
   );
 
   /* =========================
-     RENDER WORKOUT
+     RENDER
   ========================= */
   return (
     <div>
+      {/* Header */}
       <div className="mb-6">
-        <h3 className="text-2xl font-bold mb-2">Weekly Workout Plan</h3>
+        <h3 className="text-2xl font-bold mb-1">Weekly Workout Plan</h3>
         <p className="text-gray-400">
           {plan.goal} · {plan.workout_type} · {plan.week_start} → {plan.week_end}
         </p>
       </div>
 
-      <div className="mb-8 bg-linear-to-br from-blue-900/30 to-cyan-900/30 rounded-2xl p-6 border border-blue-800/30">
+      {/* Summary */}
+      <div className="mb-8 bg-blue-900/30 rounded-2xl p-6 border border-blue-800/30">
         <div className="flex items-center gap-3 mb-4">
           <div className="p-3 bg-blue-600 rounded-xl">
             <Zap className="w-6 h-6" />
           </div>
           <div>
-            <h4 className="text-2xl font-bold">{session.name}</h4>
-            <p className="text-gray-300">Repeat daily for this week</p>
+            <h4 className="text-xl font-bold">{session.name}</h4>
+            <p className="text-gray-300">Repeat daily this week</p>
           </div>
         </div>
 
@@ -204,17 +204,59 @@ const ExerciseSlider = () => {
           <Stat icon={<Timer className="w-4 h-4" />} label="Duration" value={`${totalDurationMin} mins`} />
           <Stat icon={<Target className="w-4 h-4" />} label="Exercises" value={exercises.length} />
           <Stat icon={<Flame className="w-4 h-4" />} label="Calories" value={totalCalories} />
-          <Stat icon={<TrendingUp className="w-4 h-4" />} label="Level" value={exercises[0]?.intensity} />
+          <Stat icon={<TrendingUp className="w-4 h-4" />} label="Intensity" value={exercises[0]?.intensity} />
         </div>
       </div>
 
-      {/* Exercises grid unchanged */}
+      {/* Exercises */}
+      <div className="grid gap-4">
+        {exercises.map((ex) => {
+          const logged = loggedExercises[ex.name];
+
+          return (
+            <div
+              key={ex.name}
+              className="bg-gray-900 border border-gray-800 rounded-xl p-5"
+            >
+              <div className="flex justify-between items-center mb-3">
+                <h4 className="font-bold text-lg">{ex.name}</h4>
+                <span className="text-sm text-gray-400 capitalize">
+                  {ex.intensity}
+                </span>
+              </div>
+
+              <div className="flex gap-6 text-sm text-gray-300 mb-4">
+                <div>{Math.round(ex.duration_sec / 60)} mins</div>
+                <div>{ex.estimated_calories} kcal</div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  disabled={!!logged}
+                  onClick={() => handleComplete(ex)}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-600 rounded-lg text-sm font-semibold disabled:opacity-40"
+                >
+                  <CheckCircle size={16} /> Complete
+                </button>
+
+                <button
+                  disabled={!!logged}
+                  onClick={() => handleSkip(ex)}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-700 rounded-lg text-sm font-semibold disabled:opacity-40"
+                >
+                  <XCircle size={16} /> Skip
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 };
 
 const Stat = ({ icon, label, value }) => (
-  <div className="bg-blue-900/30 rounded-xl p-3">
+  <div className="bg-blue-900/40 rounded-xl p-3">
     <div className="flex items-center gap-2 mb-1">
       {icon}
       <span className="text-sm">{label}</span>
