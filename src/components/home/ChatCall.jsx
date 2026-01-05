@@ -8,11 +8,13 @@ import {
 
 import {
   fetchChatRooms,
-  fetchChatHistory,
+  fetchChatMessages,
   setActiveRoom,
+  sendTextMessage,
+  sendMediaMessage,
 } from "../../redux/chatSlice";
 
-import { useChatSocket } from "../../hooks/useChatSocket";
+import { useChatSocket } from "../../hooks/useChatSocket.jsx";
 
 import {
   MessageSquare,
@@ -23,7 +25,6 @@ import {
   Search,
   Paperclip,
   CheckCheck,
-  Star,
   Trash2,
 } from "lucide-react";
 
@@ -40,66 +41,49 @@ const STATUS_COLOR = {
 
 const TrainerChat = () => {
   const dispatch = useDispatch();
+  const messagesEndRef = useRef(null);
+  const fileInputRef = useRef(null);
 
-  /* =======================
-     REDUX STATE
-  ======================== */
-  const { myTrainers, loading, error } = useSelector(
-    (state) => state.trainerBooking
+  const { myTrainers = [], loading, error } = useSelector(
+    (state) => state.trainerBooking || {}
   );
 
-  const { rooms, activeRoomId, messagesByRoom } = useSelector(
-    (state) => state.chat
-  );
+  const {
+    rooms = [],
+    activeRoomId = null,
+    messagesByRoom = {},
+    sendingMessage = false,
+  } = useSelector((state) => state.chat || {});
 
-  /* =======================
-     LOCAL STATE
-  ======================== */
   const [selectedTrainer, setSelectedTrainer] = useState(null);
   const [newMessage, setNewMessage] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [isMobileView, setIsMobileView] = useState(false);
   const [showChatList, setShowChatList] = useState(true);
 
-  const messagesEndRef = useRef(null);
+  useChatSocket(activeRoomId);
 
-  /* =======================
-     SOCKET
-  ======================== */
-  const { sendText } = useChatSocket(activeRoomId);
-
-  /* =======================
-     INIT
-  ======================== */
   useEffect(() => {
     dispatch(fetchMyTrainers());
     dispatch(fetchChatRooms());
-    return () => dispatch(clearTrainerState());
+
+    return () => {
+      dispatch(clearTrainerState());
+    };
   }, [dispatch]);
 
-  /* =======================
-     AUTO SCROLL
-  ======================== */
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messagesByRoom, activeRoomId]);
-
-  /* =======================
-     RESPONSIVE
-  ======================== */
   useEffect(() => {
     const handleResize = () => {
-      setIsMobileView(window.innerWidth < 768);
-      if (window.innerWidth >= 768) setShowChatList(true);
+      const mobile = window.innerWidth < 768;
+      setIsMobileView(mobile);
+      if (!mobile) setShowChatList(true);
     };
+
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  /* =======================
-     SELECT TRAINER
-  ======================== */
   const handleSelectTrainer = (trainer) => {
     setSelectedTrainer(trainer);
 
@@ -109,7 +93,7 @@ const TrainerChat = () => {
     }
 
     const room = rooms.find(
-      (r) => r.trainer === trainer.trainer_user_id
+      (r) => r.trainer_user_id === trainer.trainer_user_id
     );
 
     if (!room) {
@@ -118,14 +102,11 @@ const TrainerChat = () => {
     }
 
     dispatch(setActiveRoom(room.id));
-    dispatch(fetchChatHistory(room.id));
+    dispatch(fetchChatMessages(room.id));
 
     if (isMobileView) setShowChatList(false);
   };
 
-  /* =======================
-     REMOVE TRAINER
-  ======================== */
   const handleRemoveTrainer = () => {
     if (!selectedTrainer) return;
 
@@ -139,62 +120,101 @@ const TrainerChat = () => {
         try {
           await dispatch(removeTrainer()).unwrap();
           message.success("Trainer removed");
-
           setSelectedTrainer(null);
           dispatch(setActiveRoom(null));
           dispatch(fetchMyTrainers());
-        } catch (err) {
-          message.error(err?.detail || "Failed to remove trainer");
+        } catch {
+          message.error("Failed to remove trainer");
         }
       },
     });
   };
 
-  /* =======================
-     SEND MESSAGE
-  ======================== */
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!newMessage.trim() || !activeRoomId) return;
-    if (selectedTrainer?.status !== "approved") return;
 
-    sendText(newMessage.trim());
-    setNewMessage("");
+    try {
+      await dispatch(
+        sendTextMessage({
+          room_id: activeRoomId,
+          text: newMessage.trim(),
+        })
+      ).unwrap();
+
+      setNewMessage("");
+    } catch {
+      message.error("Failed to send message");
+    }
+  };
+
+  const handleMediaSelect = async (e) => {
+    if (!activeRoomId) return;
+
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("room_id", activeRoomId);
+    formData.append("file", file);
+    formData.append("type", "media");
+
+    try {
+      await dispatch(sendMediaMessage(formData)).unwrap();
+    } catch {
+      message.error("Failed to send media");
+    } finally {
+      e.target.value = "";
+    }
   };
 
   /* =======================
-     SEARCH (OPTIONAL)
-  ======================== */
+     🔧 ONLY FIX IS HERE
+  ======================= */
+  const rawMessages =
+    activeRoomId && messagesByRoom
+      ? messagesByRoom[activeRoomId]
+      : null;
+
+  const messages = Array.isArray(rawMessages)
+    ? rawMessages
+    : Array.isArray(rawMessages?.results)
+    ? rawMessages.results
+    : [];
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages.length, activeRoomId]);
+
   const visibleTrainers = myTrainers.filter((t) =>
-    searchTerm.trim()
+    searchTerm
       ? t.trainer_name?.toLowerCase().includes(searchTerm.toLowerCase())
       : true
   );
 
-  if (loading)
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-black text-gray-300">
         Loading trainers...
       </div>
     );
+  }
 
-  if (error)
+  if (error) {
     return (
       <div className="flex items-center justify-center h-screen bg-black text-red-400">
         {error}
       </div>
     );
+  }
 
-  const messages = activeRoomId
-    ? messagesByRoom[activeRoomId] || []
-    : [];
-
+  /* =======================
+     RENDER
+  ======================== */
   return (
     <div className="flex h-screen bg-gradient-to-br from-gray-900 to-black">
       {/* TRAINER LIST */}
       <div
-        className={`${
-          showChatList ? "flex" : "hidden"
-        } md:flex flex-col w-full md:w-96 border-r border-gray-800`}
+        className={`${showChatList ? "flex" : "hidden"} md:flex flex-col w-full md:w-96 border-r border-gray-800`}
       >
         <div className="p-6 border-b border-gray-800">
           <h2 className="text-2xl font-bold text-white">My Trainers</h2>
@@ -215,31 +235,20 @@ const TrainerChat = () => {
             <div
               key={trainer.booking_id}
               onClick={() => handleSelectTrainer(trainer)}
-              className={`p-5 border-b border-gray-800 cursor-pointer hover:bg-gray-800/50`}
+              className="p-5 border-b border-gray-800 cursor-pointer hover:bg-gray-800/50"
             >
-              <div className="flex justify-between items-center">
-                <div>
-                  <h3 className="text-white font-bold">
-                    {trainer.trainer_name}
-                  </h3>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span
-                      className={`h-2 w-2 rounded-full ${
-                        STATUS_COLOR[trainer.status] || "bg-gray-400"
-                      }`}
-                    />
-                    <span className="text-xs text-gray-400 capitalize">
-                      {trainer.status}
-                    </span>
-                  </div>
-                </div>
-
-                {trainer.rating && (
-                  <div className="flex items-center gap-1 text-yellow-400">
-                    <Star className="h-4 w-4 fill-yellow-400" />
-                    <span>{trainer.rating}</span>
-                  </div>
-                )}
+              <h3 className="text-white font-bold">
+                {trainer.trainer_name}
+              </h3>
+              <div className="flex items-center gap-2 mt-1">
+                <span
+                  className={`h-2 w-2 rounded-full ${
+                    STATUS_COLOR[trainer.status] || "bg-gray-400"
+                  }`}
+                />
+                <span className="text-xs text-gray-400 capitalize">
+                  {trainer.status}
+                </span>
               </div>
             </div>
           ))}
@@ -248,15 +257,9 @@ const TrainerChat = () => {
 
       {/* CHAT */}
       <div className="flex-1 flex flex-col">
-        {!selectedTrainer ||
-        selectedTrainer.status !== "approved" ? (
-          <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
+        {!selectedTrainer ? (
+          <div className="flex-1 flex items-center justify-center text-gray-400">
             <MessageSquare size={48} />
-            <p className="mt-4">
-              {selectedTrainer
-                ? `Chat unavailable (${selectedTrainer.status})`
-                : "Select a trainer"}
-            </p>
           </div>
         ) : (
           <>
@@ -305,7 +308,7 @@ const TrainerChat = () => {
                         : "bg-gray-800 text-gray-200"
                     }`}
                   >
-                    {msg.text}
+                    {msg.text || "📎 Media"}
                     <div className="text-xs mt-1 opacity-70 flex justify-end">
                       <CheckCheck size={14} />
                     </div>
@@ -317,9 +320,19 @@ const TrainerChat = () => {
 
             {/* INPUT */}
             <div className="p-4 border-t border-gray-800 flex gap-2">
-              <button className="p-2 bg-gray-800 rounded">
+              <input
+                ref={fileInputRef}
+                type="file"
+                hidden
+                onChange={handleMediaSelect}
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="p-2 bg-gray-800 rounded"
+              >
                 <Paperclip />
               </button>
+
               <input
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
@@ -327,8 +340,10 @@ const TrainerChat = () => {
                 placeholder="Type a message..."
                 className="flex-1 bg-gray-800 text-white rounded px-4"
               />
+
               <button
                 onClick={handleSendMessage}
+                disabled={sendingMessage}
                 className="p-2 bg-blue-600 rounded"
               >
                 <Send />

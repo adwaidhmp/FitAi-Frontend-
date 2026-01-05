@@ -26,7 +26,7 @@ export const decideUserBooking = createAsyncThunk(
   async ({ bookingId, action }, { rejectWithValue }) => {
     try {
       const res = await api.post(
-        `bookings/${bookingId}/decison/`,
+        `bookings/${bookingId}/decision/`,
         { action }, // approve | reject
       );
 
