@@ -1,9 +1,20 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+
 import {
   fetchApprovedUsers,
   clearTrainerApprovalState,
 } from "../../redux/trainer_slices/trainerBookingApprovalSlice";
+
+import {
+  fetchTrainerChatRooms,
+  fetchTrainerChatMessages,
+  sendTrainerTextMessage,
+  sendTrainerMediaMessage,
+  setActiveRoom,
+} from "../../redux/trainerChatSlice";
+
+import { useTrainerChatSocket } from "../../hooks/useTrainerChatSocket";
 
 import {
   MessageSquare,
@@ -12,33 +23,43 @@ import {
   Send,
   ChevronLeft,
   Search,
-  X,
+  Paperclip,
 } from "lucide-react";
 
 const ConfirmedClients = () => {
   const dispatch = useDispatch();
-  const { approvedUsers, loading, error } = useSelector(
-    (state) => state.trainerBookingApproval,
+
+  const { approvedUsers } = useSelector(
+    (state) => state.trainerBookingApproval
   );
 
+  const {
+    rooms,
+    activeRoomId,
+    messagesByRoom,
+    sending,
+  } = useSelector((state) => state.trainerChat);
+
   const [selectedUser, setSelectedUser] = useState(null);
-  const [messagesMap, setMessagesMap] = useState({});
   const [newMessage, setNewMessage] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [isMobileView, setIsMobileView] = useState(false);
   const [showList, setShowList] = useState(true);
 
+  const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
 
+  /* INIT */
   useEffect(() => {
     dispatch(fetchApprovedUsers());
-    return () => dispatch(clearTrainerApprovalState());
+    dispatch(fetchTrainerChatRooms());
+
+    return () => {
+      dispatch(clearTrainerApprovalState());
+    };
   }, [dispatch]);
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messagesMap, selectedUser]);
-
+  /* MOBILE */
   useEffect(() => {
     const resize = () => {
       setIsMobileView(window.innerWidth < 768);
@@ -49,60 +70,75 @@ const ConfirmedClients = () => {
     return () => window.removeEventListener("resize", resize);
   }, []);
 
+  /* AUTOSCROLL */
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messagesByRoom, activeRoomId]);
+
+  /* SOCKET */
+  useTrainerChatSocket(activeRoomId);
+
+  /* SELECT USER */
   const handleSelectUser = (user) => {
+    const room = rooms.find((r) => r.user_id === user.user_id);
+    if (!room) return;
+
     setSelectedUser(user);
-    setMessagesMap((prev) => ({
-      ...prev,
-      [user.booking_id]: prev[user.booking_id] || [],
-    }));
+    dispatch(setActiveRoom(room.id));
+    dispatch(fetchTrainerChatMessages({ roomId: room.id }));
+
     if (isMobileView) setShowList(false);
   };
 
+  /* SEND TEXT */
   const handleSendMessage = () => {
-    if (!newMessage.trim() || !selectedUser) return;
+    if (!newMessage.trim() || !activeRoomId) return;
 
-    setMessagesMap((prev) => ({
-      ...prev,
-      [selectedUser.booking_id]: [
-        ...(prev[selectedUser.booking_id] || []),
-        {
-          id: Date.now(),
-          sender: "trainer",
-          text: newMessage,
-          time: new Date().toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-        },
-      ],
-    }));
+    dispatch(
+      sendTrainerTextMessage({
+        roomId: activeRoomId,
+        text: newMessage,
+      })
+    );
 
     setNewMessage("");
   };
 
-  const filteredUsers = approvedUsers.filter((u) => {
-    if (!searchTerm.trim()) return true;
-    const name = u.user_name || "user";
-    return name.toLowerCase().includes(searchTerm.toLowerCase());
-  });
+  /* SEND MEDIA */
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (!file || !activeRoomId) return;
 
-  if (loading)
-    return (
-      <div className="flex items-center justify-center h-screen bg-black text-gray-300">
-        Loading approved users...
-      </div>
+    const type = file.type.startsWith("image")
+      ? "image"
+      : file.type.startsWith("audio")
+      ? "audio"
+      : null;
+
+    if (!type) return;
+
+    dispatch(
+      sendTrainerMediaMessage({
+        roomId: activeRoomId,
+        file,
+        type,
+      })
     );
 
-  if (error)
-    return (
-      <div className="flex items-center justify-center h-screen bg-black text-red-400">
-        {error}
-      </div>
-    );
+    e.target.value = "";
+  };
+
+  const filteredUsers = approvedUsers.filter((u) =>
+    (u.user_name || "user")
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase())
+  );
+
+  const messages = messagesByRoom[activeRoomId] || [];
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-gray-900 to-black">
-      {/* LEFT LIST */}
+      {/* USER LIST */}
       <div
         className={`${
           showList ? "flex" : "hidden"
@@ -130,10 +166,10 @@ const ConfirmedClients = () => {
           ) : (
             filteredUsers.map((user) => (
               <div
-                key={user.booking_id}
+                key={user.user_id}
                 onClick={() => handleSelectUser(user)}
                 className={`p-5 border-b border-gray-800 cursor-pointer ${
-                  selectedUser?.booking_id === user.booking_id
+                  selectedUser?.user_id === user.user_id
                     ? "bg-gray-800"
                     : "hover:bg-gray-800/50"
                 }`}
@@ -141,7 +177,7 @@ const ConfirmedClients = () => {
                 <h3 className="text-white font-bold">
                   {user.user_name || "User"}
                 </h3>
-                <span className="text-xs text-green-400">Active</span>
+                <span className="text-xs text-green-400">Approved</span>
               </div>
             ))
           )}
@@ -158,7 +194,7 @@ const ConfirmedClients = () => {
         ) : (
           <>
             {/* HEADER */}
-            <div className="p-4 border-b border-gray-800 flex justify-between">
+            <div className="p-4 border-b border-gray-800 flex justify-between items-center">
               <div className="flex items-center gap-3">
                 {isMobileView && (
                   <button onClick={() => setShowList(true)}>
@@ -167,23 +203,17 @@ const ConfirmedClients = () => {
                 )}
                 <div>
                   <h3 className="text-white font-bold">
-                    {selectedUser.user_name || "User"}
+                    {selectedUser.user_name}
                   </h3>
                   <span className="text-xs text-gray-400">Approved</span>
                 </div>
               </div>
 
               <div className="flex gap-2">
-                <button
-                  onClick={() => alert("Voice call not implemented")}
-                  className="p-2 bg-gray-800 rounded"
-                >
+                <button className="p-2 bg-gray-800 rounded">
                   <Phone />
                 </button>
-                <button
-                  onClick={() => alert("Video call not implemented")}
-                  className="p-2 bg-gray-800 rounded"
-                >
+                <button className="p-2 bg-gray-800 rounded">
                   <Video />
                 </button>
               </div>
@@ -191,13 +221,40 @@ const ConfirmedClients = () => {
 
             {/* MESSAGES */}
             <div className="flex-1 overflow-y-auto p-4">
-              {(messagesMap[selectedUser.booking_id] || []).map((msg) => (
-                <div key={msg.id} className="mb-3 flex justify-end">
-                  <div className="p-3 rounded-xl max-w-md bg-blue-600 text-white">
-                    {msg.text}
+              {messages.map((msg) => {
+                const isTrainer = msg.sender_role === "trainer";
+
+                return (
+                  <div
+                    key={msg.id}
+                    className={`mb-3 flex ${
+                      isTrainer ? "justify-end" : "justify-start"
+                    }`}
+                  >
+                    <div
+                      className={`p-3 rounded-xl max-w-md ${
+                        isTrainer
+                          ? "bg-blue-600 text-white"
+                          : "bg-gray-800 text-gray-200"
+                      }`}
+                    >
+                      {msg.type === "text" && msg.text}
+
+                      {msg.type === "image" && (
+                        <img
+                          src={msg.file}
+                          alt="media"
+                          className="max-w-xs rounded"
+                        />
+                      )}
+
+                      {msg.type === "audio" && (
+                        <audio controls src={msg.file} />
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
               <div ref={messagesEndRef} />
             </div>
 
@@ -210,8 +267,25 @@ const ConfirmedClients = () => {
                 placeholder="Type a message..."
                 className="flex-1 bg-gray-800 text-white rounded px-4"
               />
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                hidden
+                accept="image/*,audio/*"
+                onChange={handleFileSelect}
+              />
+
+              <button
+                onClick={() => fileInputRef.current.click()}
+                className="p-2 bg-gray-700 rounded"
+              >
+                <Paperclip />
+              </button>
+
               <button
                 onClick={handleSendMessage}
+                disabled={sending}
                 className="p-2 bg-blue-600 rounded"
               >
                 <Send />

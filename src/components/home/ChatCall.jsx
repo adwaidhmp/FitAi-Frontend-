@@ -44,9 +44,11 @@ const TrainerChat = () => {
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  const { myTrainers = [], loading, error } = useSelector(
-    (state) => state.trainerBooking || {}
-  );
+  const {
+    myTrainers = [],
+    loading,
+    error,
+  } = useSelector((state) => state.trainerBooking || {});
 
   const {
     rooms = [],
@@ -153,10 +155,29 @@ const TrainerChat = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    let type;
+    if (file.type.startsWith("image/")) {
+      type = "image";
+    } else if (file.type.startsWith("audio/")) {
+      type = "audio";
+    } else if (file.type.startsWith("video/")) {
+      type = "video";
+    } else {
+      message.error("Unsupported file type");
+      e.target.value = "";
+      return;
+    }
+
     const formData = new FormData();
     formData.append("room_id", activeRoomId);
     formData.append("file", file);
-    formData.append("type", "media");
+    formData.append("type", type);
+
+    // audio needs duration_sec
+    if (type === "audio") {
+      // replace this with real duration logic if you have it
+      formData.append("duration_sec", 1);
+    }
 
     try {
       await dispatch(sendMediaMessage(formData)).unwrap();
@@ -166,20 +187,17 @@ const TrainerChat = () => {
       e.target.value = "";
     }
   };
-
   /* =======================
      🔧 ONLY FIX IS HERE
   ======================= */
   const rawMessages =
-    activeRoomId && messagesByRoom
-      ? messagesByRoom[activeRoomId]
-      : null;
+    activeRoomId && messagesByRoom ? messagesByRoom[activeRoomId] : null;
 
   const messages = Array.isArray(rawMessages)
     ? rawMessages
     : Array.isArray(rawMessages?.results)
-    ? rawMessages.results
-    : [];
+      ? rawMessages.results
+      : [];
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -237,9 +255,7 @@ const TrainerChat = () => {
               onClick={() => handleSelectTrainer(trainer)}
               className="p-5 border-b border-gray-800 cursor-pointer hover:bg-gray-800/50"
             >
-              <h3 className="text-white font-bold">
-                {trainer.trainer_name}
-              </h3>
+              <h3 className="text-white font-bold">{trainer.trainer_name}</h3>
               <div className="flex items-center gap-2 mt-1">
                 <span
                   className={`h-2 w-2 rounded-full ${
@@ -294,27 +310,51 @@ const TrainerChat = () => {
 
             {/* MESSAGES */}
             <div className="flex-1 overflow-y-auto p-4">
-              {messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`mb-3 flex ${
-                    msg.is_mine ? "justify-end" : "justify-start"
-                  }`}
-                >
+              {messages.map((msg) => {
+                const isUser = msg.sender_role === "user";
+
+                return (
                   <div
-                    className={`p-3 rounded-xl max-w-md ${
-                      msg.is_mine
-                        ? "bg-blue-600 text-white"
-                        : "bg-gray-800 text-gray-200"
+                    key={msg.id}
+                    className={`mb-3 flex ${
+                      isUser ? "justify-end" : "justify-start"
                     }`}
                   >
-                    {msg.text || "📎 Media"}
-                    <div className="text-xs mt-1 opacity-70 flex justify-end">
-                      <CheckCheck size={14} />
+                    <div
+                      className={`p-3 rounded-xl max-w-md ${
+                        isUser
+                          ? "bg-blue-600 text-white"
+                          : "bg-gray-800 text-gray-200"
+                      }`}
+                    >
+                      {/* TEXT MESSAGE */}
+                      {msg.type === "text" && msg.text}
+
+                      {/* IMAGE MESSAGE */}
+                      {msg.type === "image" && msg.file && (
+                        <img
+                          src={msg.file}
+                          alt="chat-media"
+                          className="max-w-xs rounded-lg"
+                        />
+                      )}
+
+                      {/* AUDIO MESSAGE */}
+                      {msg.type === "audio" && msg.file && (
+                        <audio controls className="w-64">
+                          <source src={msg.file} />
+                          Your browser does not support audio playback.
+                        </audio>
+                      )}
+
+                      <div className="text-xs mt-1 opacity-70 flex justify-end">
+                        <CheckCheck size={14} />
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
+
               <div ref={messagesEndRef} />
             </div>
 

@@ -15,41 +15,48 @@ export function useChatSocket(roomId) {
 
     const token = localStorage.getItem("access");
     if (!token) return;
+    const wsBase = import.meta.env.VITE_USER_WS_URL;
+    const wsUrl = `${wsBase}/ws/chat/${roomId}/?token=${token}`;
 
-    const wsUrl = `ws://localhost:8001/ws/chat/${roomId}/?token=${token}`;
+const connect = () => {
+  if (!isActiveRef.current) return;
 
-    const connect = () => {
-      if (!isActiveRef.current) return;
+  const socket = new WebSocket(wsUrl);
+  socketRef.current = socket;
 
-      const socket = new WebSocket(wsUrl);
-      socketRef.current = socket;
+  socket.onopen = () => {
+    console.log("WS OPEN", wsUrl);
+  };
 
-      socket.onopen = () => {
-        console.log("✅ CHAT WS CONNECTED");
-      };
+  socket.onmessage = (event) => {
+    console.log("WS MESSAGE RAW", event.data);
 
-      socket.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
+    try {
+      const data = JSON.parse(event.data);
 
-          if (data.type === "message" && isActiveRef.current) {
-            dispatch(receiveSocketMessage(data.payload));
-          }
-        } catch (e) {
-          console.error("Invalid WS payload", e);
-        }
-      };
+      console.log("WS MESSAGE PARSED", data);
 
-      socket.onerror = () => {
-        socket.close();
-      };
+      if (data.type === "message" && isActiveRef.current) {
+        dispatch(receiveSocketMessage(data.payload));
+      }
+    } catch (e) {
+      console.error("Invalid WS payload", e);
+    }
+  };
 
-      socket.onclose = () => {
-        if (!isActiveRef.current) return;
+  socket.onerror = (e) => {
+    console.log("WS ERROR", e);
+    socket.close();
+  };
 
-        reconnectTimerRef.current = setTimeout(connect, 2000);
-      };
-    };
+  socket.onclose = (e) => {
+    console.log("WS CLOSED", e.code, e.reason);
+
+    if (!isActiveRef.current) return;
+
+    reconnectTimerRef.current = setTimeout(connect, 2000);
+  };
+};
 
     connect();
 

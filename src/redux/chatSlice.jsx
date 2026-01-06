@@ -65,19 +65,24 @@ export const sendMediaMessage = createAsyncThunk(
 );
 
 /* =========================
+   INITIAL STATE
+========================= */
+const initialState = {
+  rooms: [],
+  activeRoomId: null,
+  messagesByRoom: {}, // ALWAYS flat array per room
+  loadingRooms: false,
+  loadingMessages: false,
+  sendingMessage: false,
+  error: null,
+};
+
+/* =========================
    SLICE
 ========================= */
 const chatSlice = createSlice({
   name: "chat",
-  initialState: {
-    rooms: [],
-    activeRoomId: null,
-    messagesByRoom: {},
-    loadingRooms: false,
-    loadingMessages: false,
-    sendingMessage: false,
-    error: null,
-  },
+  initialState,
 
   reducers: {
     setActiveRoom(state, action) {
@@ -86,40 +91,32 @@ const chatSlice = createSlice({
 
     /* =========================
        SOCKET RECEIVE ONLY
-       (DB-SAVED MESSAGES)
     ========================= */
     receiveSocketMessage(state, action) {
-      const msg = action.payload;
+  const msg = action.payload;
 
-      // 🔥 normalize room id ONCE
-      const roomId =
-        typeof msg.room === "object"
-          ? String(msg.room.id)
-          : String(msg.room);
+  // 🔥 SOCKET MESSAGES ALWAYS USE room_id
+  const roomId = String(msg.room_id);
 
-      if (!state.messagesByRoom[roomId]) {
-        state.messagesByRoom[roomId] = [];
-      }
+  if (!state.messagesByRoom[roomId]) {
+    state.messagesByRoom[roomId] = [];
+  }
 
-      const exists = state.messagesByRoom[roomId].some(
-        (m) => m.id === msg.id
-      );
+  const exists = state.messagesByRoom[roomId].some(
+    (m) => m.id === msg.id
+  );
 
-      if (!exists) {
-        state.messagesByRoom[roomId].push(msg);
-      }
-    },
+  if (!exists) {
+    state.messagesByRoom[roomId].push(msg);
+  }
 
+  // enforce oldest → newest
+  state.messagesByRoom[roomId].sort(
+    (a, b) => new Date(a.created_at) - new Date(b.created_at)
+  );
+},
     clearChatState() {
-      return {
-        rooms: [],
-        activeRoomId: null,
-        messagesByRoom: {},
-        loadingRooms: false,
-        loadingMessages: false,
-        sendingMessage: false,
-        error: null,
-      };
+      return initialState;
     },
   },
 
@@ -147,20 +144,37 @@ const chatSlice = createSlice({
       })
       .addCase(fetchChatMessages.fulfilled, (state, action) => {
         state.loadingMessages = false;
-        state.messagesByRoom[action.payload.roomId] =
-          action.payload.messages;
+
+        const { roomId, messages } = action.payload;
+
+        const list = Array.isArray(messages)
+          ? messages
+          : Array.isArray(messages?.results)
+          ? messages.results
+          : [];
+
+        const existing = state.messagesByRoom[roomId] || [];
+
+        const merged = [...existing, ...list];
+
+        // 🔥 dedupe + enforce oldest → newest
+        state.messagesByRoom[roomId] = merged
+          .filter(
+            (v, i, arr) =>
+              arr.findIndex((m) => m.id === v.id) === i
+          )
+          .sort(
+            (a, b) =>
+              new Date(a.created_at) - new Date(b.created_at)
+          );
       })
       .addCase(fetchChatMessages.rejected, (state, action) => {
         state.loadingMessages = false;
         state.error = action.payload;
       })
 
-      /* -------- SEND MESSAGE -------- */
+      /* -------- SEND TEXT -------- */
       .addCase(sendTextMessage.pending, (state) => {
-        state.sendingMessage = true;
-        state.error = null;
-      })
-      .addCase(sendMediaMessage.pending, (state) => {
         state.sendingMessage = true;
         state.error = null;
       })
@@ -168,32 +182,52 @@ const chatSlice = createSlice({
         state.sendingMessage = false;
 
         const msg = action.payload;
-        const roomId =
-          typeof msg.room === "object"
-            ? String(msg.room.id)
-            : String(msg.room);
+        const roomId = String(msg.room_id);
 
         if (!state.messagesByRoom[roomId]) {
           state.messagesByRoom[roomId] = [];
         }
 
-        state.messagesByRoom[roomId].push(msg);
+        const exists = state.messagesByRoom[roomId].some(
+          (m) => m.id === msg.id
+        );
+
+        if (!exists) {
+          state.messagesByRoom[roomId].push(msg);
+        }
+
+        state.messagesByRoom[roomId].sort(
+          (a, b) => new Date(a.created_at) - new Date(b.created_at)
+        );
+      })
+
+      /* -------- SEND MEDIA -------- */
+      .addCase(sendMediaMessage.pending, (state) => {
+        state.sendingMessage = true;
+        state.error = null;
       })
       .addCase(sendMediaMessage.fulfilled, (state, action) => {
-        state.sendingMessage = false;
+  state.sendingMessage = false;
 
-        const msg = action.payload;
-        const roomId =
-          typeof msg.room === "object"
-            ? String(msg.room.id)
-            : String(msg.room);
+  const msg = action.payload;
+  const roomId = String(msg.room_id);
 
-        if (!state.messagesByRoom[roomId]) {
-          state.messagesByRoom[roomId] = [];
-        }
+  if (!state.messagesByRoom[roomId]) {
+    state.messagesByRoom[roomId] = [];
+  }
 
-        state.messagesByRoom[roomId].push(msg);
-      })
+  const exists = state.messagesByRoom[roomId].some(
+    (m) => m.id === msg.id
+  );
+
+  if (!exists) {
+    state.messagesByRoom[roomId].push(msg);
+  }
+
+  state.messagesByRoom[roomId].sort(
+    (a, b) => new Date(a.created_at) - new Date(b.created_at)
+  );
+})
       .addCase(sendTextMessage.rejected, (state, action) => {
         state.sendingMessage = false;
         state.error = action.payload;

@@ -10,6 +10,7 @@ import dietActionsReducer from "./user_slices/dietActionsSlice.jsx";
 import progressReducer from "./user_slices/dietAnalyticsSlice.jsx";
 import workoutSliceReducer from "./user_slices/workoutSlice.jsx";
 import chatReducer from "./chatSlice.jsx";
+import trainerChatReducer from "./trainerChatSlice.jsx";
 /* -------------------------------------------------------
    Combine all reducers
 ------------------------------------------------------- */
@@ -24,6 +25,7 @@ const appReducer = combineReducers({
   progress: progressReducer,
   workout: workoutSliceReducer,
   chat: chatReducer,
+  trainerChat: trainerChatReducer,
 });
 
 /* -------------------------------------------------------
