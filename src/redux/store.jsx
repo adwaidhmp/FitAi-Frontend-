@@ -9,8 +9,11 @@ import trainerBookingApprovalReducer from "./trainer_slices/trainerBookingApprov
 import dietActionsReducer from "./user_slices/dietActionsSlice.jsx";
 import progressReducer from "./user_slices/dietAnalyticsSlice.jsx";
 import workoutSliceReducer from "./user_slices/workoutSlice.jsx";
-import chatReducer from "./chatSlice.jsx";
-import trainerChatReducer from "./trainerChatSlice.jsx";
+import chatReducer from "./user_slices/chatSlice.jsx";
+import trainerChatReducer from "./trainer_slices/trainerChatSlice.jsx";
+import userCallReducer from "./user_slices/userCallSlice.jsx";
+import trainerCallReducer from "./trainer_slices/trainerCallSlice.jsx";
+
 /* -------------------------------------------------------
    Combine all reducers
 ------------------------------------------------------- */
@@ -26,6 +29,8 @@ const appReducer = combineReducers({
   workout: workoutSliceReducer,
   chat: chatReducer,
   trainerChat: trainerChatReducer,
+  userCall: userCallReducer,
+  trainerCall: trainerCallReducer,
 });
 
 /* -------------------------------------------------------

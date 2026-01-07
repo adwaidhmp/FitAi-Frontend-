@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useDispatch } from "react-redux";
-import { receiveSocketMessage } from "../redux/chatSlice";
+import { receiveSocketMessage } from "../redux/user_slices/chatSlice";
 
 export function useChatSocket(roomId) {
   const dispatch = useDispatch();

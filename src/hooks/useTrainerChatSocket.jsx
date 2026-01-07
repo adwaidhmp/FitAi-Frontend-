@@ -3,7 +3,7 @@ import { useDispatch } from "react-redux";
 import {
   receiveSocketMessage,
   markRoomRead,
-} from "../redux/trainerChatSlice";
+} from "../redux/trainer_slices/trainerChatSlice";
 
 /**
  * Trainer chat WebSocket hook

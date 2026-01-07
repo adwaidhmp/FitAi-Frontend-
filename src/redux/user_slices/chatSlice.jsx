@@ -1,6 +1,6 @@
 // src/redux/chatSlice.js
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import api from "../api5.jsx";
+import api from "../../api5.jsx";
 
 /* =========================
    FETCH USER CHAT ROOMS

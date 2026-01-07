@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import api from "../api3.jsx";
+import api from "../../api3";
 
 /* ============================
    FETCH TRAINER CHAT ROOMS

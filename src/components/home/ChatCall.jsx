@@ -12,14 +12,16 @@ import {
   setActiveRoom,
   sendTextMessage,
   sendMediaMessage,
-} from "../../redux/chatSlice";
+} from "../../redux/user_slices/chatSlice.jsx";
 
 import { useChatSocket } from "../../hooks/useChatSocket.jsx";
+import { useGlobalCallSocket } from "../../hooks/useGlobalCallSocket"; // ✅ ADDED
+import { startCall } from "../../redux/user_slices/userCallSlice";
+import { useNavigate } from "react-router-dom";
 
 import {
   MessageSquare,
   Video,
-  Phone,
   Send,
   ChevronLeft,
   Search,
@@ -29,7 +31,6 @@ import {
 } from "lucide-react";
 
 import { Modal, message } from "antd";
-
 const { confirm } = Modal;
 
 const STATUS_COLOR = {
@@ -41,9 +42,14 @@ const STATUS_COLOR = {
 
 const TrainerChat = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
 
+  /* =======================
+     REDUX STATE
+  ======================== */
   const {
     myTrainers = [],
     loading,
@@ -57,14 +63,26 @@ const TrainerChat = () => {
     sendingMessage = false,
   } = useSelector((state) => state.chat || {});
 
+  const { activeCall } = useSelector((state) => state.userCall || {});
+
+  /* =======================
+     LOCAL STATE
+  ======================== */
   const [selectedTrainer, setSelectedTrainer] = useState(null);
   const [newMessage, setNewMessage] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [isMobileView, setIsMobileView] = useState(false);
   const [showChatList, setShowChatList] = useState(true);
 
+  /* =======================
+     SOCKETS
+  ======================== */
   useChatSocket(activeRoomId);
+  useGlobalCallSocket(); // ✅ REQUIRED FOR CALL EVENTS
 
+  /* =======================
+     EFFECTS
+  ======================== */
   useEffect(() => {
     dispatch(fetchMyTrainers());
     dispatch(fetchChatRooms());
@@ -85,6 +103,35 @@ const TrainerChat = () => {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  // ✅ NAVIGATE ONLY WHEN CALL IS ACCEPTED (WS-DRIVEN)
+  useEffect(() => {
+    if (activeCall?.status === "accepted" && activeCall?.call_id) {
+      navigate(`/video-call/${activeCall.call_id}`);
+    }
+  }, [activeCall?.status, activeCall?.call_id, navigate]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [activeRoomId, messagesByRoom]);
+
+  /* =======================
+     HANDLERS
+  ======================== */
+
+  const handleVideoCall = async () => {
+    if (!activeRoomId) {
+      message.warning("Chat room not ready");
+      return;
+    }
+
+    try {
+      await dispatch(startCall(activeRoomId)).unwrap();
+      message.info("Calling trainer…");
+    } catch {
+      message.error("Unable to start video call");
+    }
+  };
 
   const handleSelectTrainer = (trainer) => {
     setSelectedTrainer(trainer);
@@ -142,7 +189,6 @@ const TrainerChat = () => {
           text: newMessage.trim(),
         })
       ).unwrap();
-
       setNewMessage("");
     } catch {
       message.error("Failed to send message");
@@ -156,13 +202,10 @@ const TrainerChat = () => {
     if (!file) return;
 
     let type;
-    if (file.type.startsWith("image/")) {
-      type = "image";
-    } else if (file.type.startsWith("audio/")) {
-      type = "audio";
-    } else if (file.type.startsWith("video/")) {
-      type = "video";
-    } else {
+    if (file.type.startsWith("image/")) type = "image";
+    else if (file.type.startsWith("audio/")) type = "audio";
+    else if (file.type.startsWith("video/")) type = "video";
+    else {
       message.error("Unsupported file type");
       e.target.value = "";
       return;
@@ -173,11 +216,7 @@ const TrainerChat = () => {
     formData.append("file", file);
     formData.append("type", type);
 
-    // audio needs duration_sec
-    if (type === "audio") {
-      // replace this with real duration logic if you have it
-      formData.append("duration_sec", 1);
-    }
+    if (type === "audio") formData.append("duration_sec", 1);
 
     try {
       await dispatch(sendMediaMessage(formData)).unwrap();
@@ -187,27 +226,29 @@ const TrainerChat = () => {
       e.target.value = "";
     }
   };
+
   /* =======================
-     🔧 ONLY FIX IS HERE
-  ======================= */
+     DATA
+  ======================== */
+
   const rawMessages =
     activeRoomId && messagesByRoom ? messagesByRoom[activeRoomId] : null;
 
   const messages = Array.isArray(rawMessages)
     ? rawMessages
     : Array.isArray(rawMessages?.results)
-      ? rawMessages.results
-      : [];
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages.length, activeRoomId]);
+    ? rawMessages.results
+    : [];
 
   const visibleTrainers = myTrainers.filter((t) =>
     searchTerm
       ? t.trainer_name?.toLowerCase().includes(searchTerm.toLowerCase())
       : true
   );
+
+  /* =======================
+     RENDER
+  ======================== */
 
   if (loading) {
     return (
@@ -225,9 +266,6 @@ const TrainerChat = () => {
     );
   }
 
-  /* =======================
-     RENDER
-  ======================== */
   return (
     <div className="flex h-screen bg-gradient-to-br from-gray-900 to-black">
       {/* TRAINER LIST */}
@@ -299,10 +337,10 @@ const TrainerChat = () => {
                 >
                   <Trash2 />
                 </button>
-                <button className="p-2 bg-gray-800 rounded">
-                  <Phone />
-                </button>
-                <button className="p-2 bg-gray-800 rounded">
+                <button
+                  onClick={handleVideoCall}
+                  className="p-2 bg-gray-800 rounded"
+                >
                   <Video />
                 </button>
               </div>
@@ -327,10 +365,8 @@ const TrainerChat = () => {
                           : "bg-gray-800 text-gray-200"
                       }`}
                     >
-                      {/* TEXT MESSAGE */}
                       {msg.type === "text" && msg.text}
 
-                      {/* IMAGE MESSAGE */}
                       {msg.type === "image" && msg.file && (
                         <img
                           src={msg.file}
@@ -339,11 +375,9 @@ const TrainerChat = () => {
                         />
                       )}
 
-                      {/* AUDIO MESSAGE */}
                       {msg.type === "audio" && msg.file && (
                         <audio controls className="w-64">
                           <source src={msg.file} />
-                          Your browser does not support audio playback.
                         </audio>
                       )}
 
@@ -354,7 +388,6 @@ const TrainerChat = () => {
                   </div>
                 );
               })}
-
               <div ref={messagesEndRef} />
             </div>
 

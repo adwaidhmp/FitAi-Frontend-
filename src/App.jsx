@@ -1,44 +1,59 @@
+import "./app.css";
 import {
-  BrowserRouter as Router,
   Routes,
   Route,
   Navigate,
 } from "react-router-dom";
-import "./app.css";
+
+/* ===== AUTH ===== */
 import Login from "./components/auth/login";
 import Signup from "./components/auth/signup";
-import ProfileForm from "./components/user/ProfileForm";
+import ForgotPasswordRequest from "./components/auth/ForgotPasswordRequest";
+import ForgotPasswordConfirm from "./components/auth/ForgotPasswordConfirm";
 import ProfilePage from "./components/auth/profile";
+
+/* ===== USER ===== */
+import ProfileForm from "./components/user/ProfileForm";
+import RequireProfile from "./components/user_routes/RequireProfile";
 import Home from "./components/home/Home";
+import HomeLanding from "./components/home/HomeLanding";
 import DietPlanSlider from "./components/home/DietPlanSlider";
 import ExerciseSlider from "./components/home/ExerciseSlider";
 import ProgressDashboard from "./components/home/ProgressDashboard";
 import TrainerSlider from "./components/home/TrainerSlider";
-import LandingPage from "./components/landing";
-import ForgotPasswordRequest from "./components/auth/ForgotPasswordRequest";
-import ForgotPasswordConfirm from "./components/auth/ForgotPasswordConfirm";
+import TrainerChat from "./components/home/ChatCall";
 
-import RequireProfile from "./components/user_routes/RequireProfile";
+/* ===== TRAINER ===== */
 import RequireTrainerProfile from "./components/trainer_routes/RequireTrainerProfile";
-import AdminProtectedRoute from "./components/admin_route/AdminProtectedRoute";
-
 import TrainerHome from "./components/trainer/home_page";
 import ConfirmedClients from "./components/trainer/ConfirmedClients";
 import PendingRequests from "./components/trainer/PendingRequests";
 import TrainerProfileForm from "./components/user/TrainerProfileForm";
 import TrainerProfilePage from "./components/trainer/TrainerProfilePage";
 
+/* ===== ADMIN ===== */
+import AdminProtectedRoute from "./components/admin_route/AdminProtectedRoute";
 import AdminLayout from "./components/admin/AdminLayout";
 import Dashboard from "./components/admin/Dashboard";
 import UserManagement from "./components/admin/UserManagement";
 import TrainerManagement from "./components/admin/TrainerManagement";
-import TrainerChat from "./components/home/ChatCall";
-import HomeLanding from "./components/home/HomeLanding";
+
+/* ===== MISC ===== */
+import LandingPage from "./components/landing";
 import PageNotFound from "./components/PageNotFound";
 
+/* ===== CALL ===== */
+import VideoCall from "./components/call_component/VideoCall";
+import IncomingCallModal from "./components/call_component/IncomingCallModal";
+import { useGlobalCallSocket } from "./hooks/useGlobalCallSocket";
 function App() {
+  useGlobalCallSocket();
   return (
-    <Router>
+    <>
+      {/* 🔔 GLOBAL INCOMING CALL POPUP */}
+      <IncomingCallModal />
+
+      {/* 🔀 ROUTES */}
       <Routes>
         {/* PUBLIC */}
         <Route path="/" element={<LandingPage />} />
@@ -50,16 +65,18 @@ function App() {
           element={<ForgotPasswordConfirm />}
         />
 
+        {/* CALL */}
+        <Route path="/video-call/:callId" element={<VideoCall />} />
+
         {/* USER */}
         <Route element={<RequireProfile />}>
           <Route path="/profile_form" element={<ProfileForm />} />
 
-          {/* Home becomes a LAYOUT */}
-          <Route path="home/" element={<Home />}>
+          <Route path="home" element={<Home />}>
             <Route index element={<HomeLanding />} />
             <Route path="diet" element={<DietPlanSlider />} />
-            <Route path="progress-dashboard" element={<ProgressDashboard />} />
             <Route path="exercise" element={<ExerciseSlider />} />
+            <Route path="progress-dashboard" element={<ProgressDashboard />} />
             <Route path="trainer" element={<TrainerSlider />} />
             <Route path="chat-call" element={<TrainerChat />} />
             <Route path="profile" element={<ProfilePage />} />
@@ -88,10 +105,10 @@ function App() {
           </Route>
         </Route>
 
-        {/* GLOBAL FALLBACK */}
+        {/* FALLBACK */}
         <Route path="*" element={<PageNotFound />} />
       </Routes>
-    </Router>
+    </>
   );
 }
 

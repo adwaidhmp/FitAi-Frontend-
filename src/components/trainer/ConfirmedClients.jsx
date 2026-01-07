@@ -1,21 +1,29 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 
+/* APPROVAL */
 import {
   fetchApprovedUsers,
   clearTrainerApprovalState,
 } from "../../redux/trainer_slices/trainerBookingApprovalSlice";
 
+/* CHAT */
 import {
   fetchTrainerChatRooms,
   fetchTrainerChatMessages,
   sendTrainerTextMessage,
   sendTrainerMediaMessage,
   setActiveRoom,
-} from "../../redux/trainerChatSlice";
+} from "../../redux/trainer_slices/trainerChatSlice";
 
+/* CALL */
+import { startCall  } from "../../redux/trainer_slices/trainerCallSlice";
+
+/* SOCKET */
 import { useTrainerChatSocket } from "../../hooks/useTrainerChatSocket";
 
+/* ICONS */
 import {
   MessageSquare,
   Video,
@@ -28,28 +36,41 @@ import {
 
 const ConfirmedClients = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
-  const { approvedUsers } = useSelector(
-    (state) => state.trainerBookingApproval
+  const fileInputRef = useRef(null);
+  const messagesEndRef = useRef(null);
+
+  /* =======================
+     REDUX STATE
+  ======================== */
+  const { approvedUsers = [] } = useSelector(
+    (state) => state.trainerBookingApproval || {}
   );
 
   const {
-    rooms,
+    rooms = [],
     activeRoomId,
-    messagesByRoom,
+    messagesByRoom = {},
     sending,
-  } = useSelector((state) => state.trainerChat);
+  } = useSelector((state) => state.trainerChat || {});
 
+  const { activeCall } = useSelector(
+    (state) => state.trainerCall || {}
+  );
+
+  /* =======================
+     LOCAL STATE
+  ======================== */
   const [selectedUser, setSelectedUser] = useState(null);
   const [newMessage, setNewMessage] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [isMobileView, setIsMobileView] = useState(false);
   const [showList, setShowList] = useState(true);
 
-  const fileInputRef = useRef(null);
-  const messagesEndRef = useRef(null);
-
-  /* INIT */
+  /* =======================
+     INIT
+  ======================== */
   useEffect(() => {
     dispatch(fetchApprovedUsers());
     dispatch(fetchTrainerChatRooms());
@@ -59,26 +80,45 @@ const ConfirmedClients = () => {
     };
   }, [dispatch]);
 
-  /* MOBILE */
+  /* =======================
+     MOBILE
+  ======================== */
   useEffect(() => {
     const resize = () => {
-      setIsMobileView(window.innerWidth < 768);
-      if (window.innerWidth >= 768) setShowList(true);
+      const mobile = window.innerWidth < 768;
+      setIsMobileView(mobile);
+      if (!mobile) setShowList(true);
     };
     resize();
     window.addEventListener("resize", resize);
     return () => window.removeEventListener("resize", resize);
   }, []);
 
-  /* AUTOSCROLL */
+  /* =======================
+     SOCKET
+  ======================== */
+  useTrainerChatSocket(activeRoomId);
+
+  /* =======================
+     AUTOSCROLL
+  ======================== */
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messagesByRoom, activeRoomId]);
 
-  /* SOCKET */
-  useTrainerChatSocket(activeRoomId);
+  /* =======================
+     ✅ CALL ACCEPTED → NAVIGATE
+  ======================== */
+  useEffect(() => {
+    if (activeCall?.call_id) {
+      navigate(`/video-call/${activeCall.call_id}`);
+    }
+  }, [activeCall, navigate]);
 
-  /* SELECT USER */
+  /* =======================
+     HANDLERS
+  ======================== */
+
   const handleSelectUser = (user) => {
     const room = rooms.find((r) => r.user_id === user.user_id);
     if (!room) return;
@@ -90,7 +130,6 @@ const ConfirmedClients = () => {
     if (isMobileView) setShowList(false);
   };
 
-  /* SEND TEXT */
   const handleSendMessage = () => {
     if (!newMessage.trim() || !activeRoomId) return;
 
@@ -104,9 +143,8 @@ const ConfirmedClients = () => {
     setNewMessage("");
   };
 
-  /* SEND MEDIA */
   const handleFileSelect = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     if (!file || !activeRoomId) return;
 
     const type = file.type.startsWith("image")
@@ -128,6 +166,24 @@ const ConfirmedClients = () => {
     e.target.value = "";
   };
 
+  /* =======================
+     🎥 VIDEO CALL (FIXED)
+  ======================== */
+  const handleVideoCall = async () => {
+    if (!activeRoomId || !selectedUser) return;
+
+    try {
+      await dispatch(startCall(activeRoomId)).unwrap();
+
+    } catch {
+      // optional toast if you want
+    }
+  };
+
+  /* =======================
+     DATA
+  ======================== */
+
   const filteredUsers = approvedUsers.filter((u) =>
     (u.user_name || "user")
       .toLowerCase()
@@ -135,6 +191,10 @@ const ConfirmedClients = () => {
   );
 
   const messages = messagesByRoom[activeRoomId] || [];
+
+  /* =======================
+     RENDER
+  ======================== */
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-gray-900 to-black">
@@ -213,7 +273,10 @@ const ConfirmedClients = () => {
                 <button className="p-2 bg-gray-800 rounded">
                   <Phone />
                 </button>
-                <button className="p-2 bg-gray-800 rounded">
+                <button
+                  className="p-2 bg-gray-800 rounded"
+                  onClick={handleVideoCall}
+                >
                   <Video />
                 </button>
               </div>
@@ -277,7 +340,7 @@ const ConfirmedClients = () => {
               />
 
               <button
-                onClick={() => fileInputRef.current.click()}
+                onClick={() => fileInputRef.current?.click()}
                 className="p-2 bg-gray-700 rounded"
               >
                 <Paperclip />
