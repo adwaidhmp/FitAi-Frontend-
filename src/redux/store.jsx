@@ -13,6 +13,7 @@ import chatReducer from "./user_slices/chatSlice.jsx";
 import trainerChatReducer from "./trainer_slices/trainerChatSlice.jsx";
 import userCallReducer from "./user_slices/userCallSlice.jsx";
 import trainerCallReducer from "./trainer_slices/trainerCallSlice.jsx";
+import trainerUserOverviewReducer from "./trainer_slices/trainerUserOverviewSlice.jsx";
 
 /* -------------------------------------------------------
    Combine all reducers
@@ -31,11 +32,13 @@ const appReducer = combineReducers({
   trainerChat: trainerChatReducer,
   userCall: userCallReducer,
   trainerCall: trainerCallReducer,
+  trainerUserOverview: trainerUserOverviewReducer,
 });
 
 /* -------------------------------------------------------
    Root reducer with GLOBAL RESET on logout
 ------------------------------------------------------- */
+
 const rootReducer = (state, action) => {
   // 🔥 Reset entire Redux store on logout (success or failure)
   if (

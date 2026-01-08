@@ -14,14 +14,19 @@ export const fetchCurrentDietPlan = createAsyncThunk(
       return res.data;
     } catch (err) {
       if (err.response?.status === 404) {
-        return { has_plan: false };
+        // backend-safe fallback
+        return {
+          has_plan: false,
+          can_generate: true,
+          can_update_weight: false,
+        };
       }
       return rejectWithValue(err.response?.data?.detail);
     }
   }
 );
 
-/* ---- TODAY MEAL STATUS (NEW) ---- */
+/* ---- TODAY MEAL STATUS ---- */
 export const fetchTodayMealStatus = createAsyncThunk(
   "dietActions/fetchTodayMealStatus",
   async (_, { rejectWithValue }) => {
@@ -121,9 +126,9 @@ const initialState = {
   loading: false,
   error: null,
 
+  // 🔥 MUST always hold backend response
   currentPlan: null,
 
-  // SOURCE OF TRUTH FOR UI LOCKING
   mealStatus: {
     breakfast: null,
     lunch: null,
@@ -153,39 +158,49 @@ const dietActionsSlice = createSlice({
       })
       .addCase(fetchCurrentDietPlan.fulfilled, (state, action) => {
         state.loading = false;
-        state.currentPlan =
-          action.payload?.has_plan === false ? null : action.payload;
+
+        // ✅ FIX: NEVER nullify backend response
+        state.currentPlan = action.payload;
       })
       .addCase(fetchCurrentDietPlan.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
 
-      /* ---------- TODAY STATUS (CRITICAL) ---------- */
+      /* ---------- TODAY STATUS ---------- */
       .addCase(fetchTodayMealStatus.fulfilled, (state, action) => {
         state.mealStatus = action.payload;
       })
 
       /* ---------- GENERATE PLAN ---------- */
       .addCase(generateDietPlan.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(generateDietPlan.fulfilled, (state, action) => {
-        state.loading = false;
-        state.currentPlan = action.payload;
+  state.loading = true;
+  state.error = null;
+})
 
-        // reset only because new plan means new day context
-        state.mealStatus = {
-          breakfast: null,
-          lunch: null,
-          dinner: null,
-        };
-      })
-      .addCase(generateDietPlan.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      })
+.addCase(generateDietPlan.fulfilled, (state, action) => {
+  state.loading = false;
+
+  // 🔥 DO NOT overwrite currentPlan with "processing" response
+  state.lastResponse = action.payload;
+
+  // Optional UX: mark existing plan as pending
+  if (state.currentPlan) {
+    state.currentPlan.status = "pending";
+  }
+
+  // Reset meal UI (safe)
+  state.mealStatus = {
+    breakfast: null,
+    lunch: null,
+    dinner: null,
+  };
+})
+
+.addCase(generateDietPlan.rejected, (state, action) => {
+  state.loading = false;
+  state.error = action.payload;
+})
 
       /* ---------- WEIGHT ---------- */
       .addCase(updateWeight.fulfilled, (state, action) => {
@@ -193,7 +208,14 @@ const dietActionsSlice = createSlice({
         state.lastResponse = action.payload;
 
         if (action.payload?.new_plan) {
-          state.currentPlan = action.payload.new_plan;
+          state.currentPlan = {
+            ...state.currentPlan,
+            ...action.payload.new_plan,
+            has_plan: true,
+            can_generate: false,
+            can_update_weight: false,
+          };
+
           state.mealStatus = {
             breakfast: null,
             lunch: null,
@@ -218,8 +240,6 @@ const dietActionsSlice = createSlice({
           ].includes(action.type),
         (state, action) => {
           const { meal_type, source } = action.payload;
-
-          // optimistic update (backend already enforced uniqueness)
           state.mealStatus[meal_type] = source;
           state.lastResponse = action.payload;
         }
@@ -227,14 +247,14 @@ const dietActionsSlice = createSlice({
 
       /* ---------- ERRORS ---------- */
       .addMatcher(
-        (action) =>
-          action.type.startsWith("dietActions/") &&
-          action.type.endsWith("/rejected"),
-        (state, action) => {
-          state.loading = false;
-          state.error = action.payload;
-        }
-      );
+  (action) =>
+    action.type.startsWith("dietActions/") &&
+    action.type.endsWith("/rejected"),
+  (state, action) => {
+    state.loading = false;
+    state.error = action.payload || "Something went wrong";
+  }
+);
   },
 });
 

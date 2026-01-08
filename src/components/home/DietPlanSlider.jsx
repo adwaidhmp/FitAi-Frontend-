@@ -10,7 +10,7 @@ import { message } from "antd";
 
 import {
   fetchCurrentDietPlan,
-  fetchTodayMealStatus, // ✅ IMPORTANT
+  fetchTodayMealStatus,
   generateDietPlan,
   followMealFromPlan,
   skipMeal,
@@ -35,11 +35,11 @@ const DietPlanSlider = () => {
   const [extraMeal, setExtraMeal] = useState("");
 
   /* ============================
-     LOAD DATA (PLAN + TODAY STATUS)
+     LOAD DATA
   ============================ */
   useEffect(() => {
     dispatch(fetchCurrentDietPlan());
-    dispatch(fetchTodayMealStatus()); // 🔥 THIS FIXES REFRESH ISSUE
+    dispatch(fetchTodayMealStatus());
 
     return () => {
       dispatch(clearDietActionState());
@@ -62,6 +62,22 @@ const DietPlanSlider = () => {
   }, [error]);
 
   /* ============================
+     BACKEND-DRIVEN UI STATE
+  ============================ */
+  const showGenerate =
+    !currentPlan ||
+    (!currentPlan.has_plan && currentPlan.can_generate);
+
+  const isPending =
+    currentPlan?.status === "pending";
+
+  const showPlan =
+    currentPlan?.status === "ready";
+
+  const showWeightUpdate =
+    currentPlan?.can_update_weight;
+
+  /* ============================
      NORMALIZE PLAN
   ============================ */
   const dietPlan = useMemo(() => {
@@ -70,7 +86,7 @@ const DietPlanSlider = () => {
     return {
       daily_calories: currentPlan.daily_calories,
       meals: currentPlan.meals.map((meal) => ({
-        meal_type: meal.name.toLowerCase(), // breakfast | lunch | dinner
+        meal_type: meal.name.toLowerCase(),
         display_name: meal.name,
         items: meal.items || [],
       })),
@@ -134,16 +150,16 @@ const DietPlanSlider = () => {
   };
 
   /* ============================
-     LOADING
+     LOADING (FIRST LOAD ONLY)
   ============================ */
-  if (loading && !dietPlan) {
+  if (loading && !currentPlan) {
     return <div className="text-gray-400">Loading diet plan…</div>;
   }
 
   /* ============================
-     NO PLAN
+     GENERATE FIRST PLAN
   ============================ */
-  if (!dietPlan) {
+  if (showGenerate) {
     return (
       <div className="text-center py-16">
         <h3 className="text-2xl font-bold mb-3">No Diet Plan Yet</h3>
@@ -160,6 +176,30 @@ const DietPlanSlider = () => {
       </div>
     );
   }
+
+  /* ============================
+     PLAN GENERATING (ASYNC)
+  ============================ */
+  if (isPending) {
+    return (
+      <div className="text-center py-16">
+        <h3 className="text-2xl font-bold mb-3">
+          Generating Your Diet Plan
+        </h3>
+        <p className="text-gray-400 mb-6">
+          This may take a moment. Please don’t refresh.
+        </p>
+        <div className="animate-pulse text-purple-400">
+          AI is building your plan…
+        </div>
+      </div>
+    );
+  }
+
+  /* ============================
+     SAFETY
+  ============================ */
+  if (!showPlan || !dietPlan) return null;
 
   /* ============================
      UI
@@ -285,24 +325,29 @@ const DietPlanSlider = () => {
       </div>
 
       {/* Weight Update */}
-      <div className="mt-6 bg-gray-900/60 border border-gray-800 rounded-xl p-4">
-        <h4 className="font-semibold mb-2">Weekly Weight Update</h4>
-        <div className="flex gap-2">
-          <input
-            type="number"
-            value={weight}
-            onChange={(e) => setWeight(e.target.value)}
-            placeholder="Enter weight (kg)"
-            className="flex-1 bg-gray-800 rounded-md px-3 py-2 text-sm"
-          />
-          <button
-            onClick={handleWeightUpdate}
-            className="px-3 py-2 bg-blue-600 rounded-md"
-          >
-            <Weight size={16} />
-          </button>
+      {showWeightUpdate && (
+        <div className="mt-6 bg-gray-900/60 border border-gray-800 rounded-xl p-4">
+          <h4 className="font-semibold mb-2">Weekly Weight Update</h4>
+          <div className="flex gap-2">
+            <input
+              type="number"
+              value={weight}
+              onChange={(e) => setWeight(e.target.value)}
+              placeholder="Enter weight (kg)"
+              className="flex-1 bg-gray-800 rounded-md px-3 py-2 text-sm"
+            />
+            <button
+              onClick={handleWeightUpdate}
+              className="px-3 py-2 bg-blue-600 rounded-md"
+            >
+              <Weight size={16} />
+            </button>
+          </div>
+          <p className="mt-2 text-xs text-gray-500">
+            Updating weight will generate a new diet plan automatically.
+          </p>
         </div>
-      </div>
+      )}
 
       {dietPlan.disclaimer && (
         <p className="mt-4 text-xs text-gray-500">
