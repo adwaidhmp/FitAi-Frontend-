@@ -227,12 +227,14 @@ const DietPlanSlider = () => {
   ============================ */
   // If we have no plan data to show, but we are supposed to show weight update
   if (!showPlan && !dietPlan) {
-      if (forceWeightUpdate) {
+      if (showWeightUpdate) {
           return (
             <div className="bg-gray-900/60 border border-gray-800 rounded-xl p-6 text-center">
                 <h3 className="text-xl font-bold mb-2">Update Weight Required</h3>
                 <p className="text-gray-400 mb-6">
-                    Your previous diet plan has expired. Please update your weight to generate a new one.
+                    {forceWeightUpdate 
+                        ? "Your previous diet plan has expired. Please update your weight to generate a new one."
+                        : "Please update your weight to generate your new diet plan."}
                 </p>
                 
                 <div className="max-w-xs mx-auto flex gap-2">
