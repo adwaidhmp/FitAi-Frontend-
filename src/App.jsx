@@ -26,6 +26,7 @@ import TrainerChat from "./components/home/ChatCall";
 /* ===== TRAINER ===== */
 import RequireTrainerProfile from "./components/trainer_routes/RequireTrainerProfile";
 import TrainerHome from "./components/trainer/home_page";
+import TrainerLayout from "./components/trainer/TrainerLayout";
 import ConfirmedClients from "./components/trainer/ConfirmedClients";
 import PendingRequests from "./components/trainer/PendingRequests";
 import TrainerProfileForm from "./components/user/TrainerProfileForm";
@@ -104,9 +105,15 @@ function App() {
             path="/trainer_profile_form"
             element={<TrainerProfileForm />}
           />
-          <Route path="/trainer-home" element={<TrainerHome />} />
-          <Route path="/clients" element={<ConfirmedClients />} />
-          <Route path="/client-request" element={<PendingRequests />} />
+          
+          {/* TRAINER HOME LAYOUT */}
+          <Route path="trainer-home" element={<TrainerLayout />}>
+             <Route index element={<TrainerHome />} />
+             <Route path="clients" element={<ConfirmedClients />} />
+             <Route path="client-request" element={<PendingRequests />} />
+             <Route path="chat-call" element={<TrainerChat />} />
+             <Route path="trainer-profile" element={<TrainerProfilePage />} />
+          </Route>
         </Route>
 
         {/* ADMIN */}
