@@ -7,6 +7,7 @@ import {
   TrendingUp,
   CheckCircle,
   XCircle,
+  RefreshCw,
 } from "lucide-react";
 
 import {
@@ -130,8 +131,23 @@ const ExerciseSlider = () => {
 
   if (!session || exercises.length === 0) {
     return (
-      <div className="text-gray-400">
-        Workout exists but no exercises found.
+      <div className="text-center py-16">
+        <h3 className="text-2xl font-bold mb-3">
+          Generating Your Workout
+        </h3>
+        <p className="text-gray-400 mb-6">
+          This may take a moment.
+        </p>
+        <div className="animate-pulse text-blue-400 mb-6">
+          AI is building your workout plan…
+        </div>
+        <button
+          onClick={() => dispatch(fetchCurrentWorkout())}
+          className="flex items-center gap-2 mx-auto px-4 py-2 bg-gray-800 rounded-md hover:bg-gray-700 transition font-medium text-sm"
+        >
+          <RefreshCw size={16} />
+          Refresh Status
+        </button>
       </div>
     );
   }

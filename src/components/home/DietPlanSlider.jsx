@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   ChevronRight,
   Plus,
+  RefreshCw,
   SkipForward,
   Weight,
 } from "lucide-react";
@@ -33,6 +34,7 @@ const DietPlanSlider = () => {
 
   const [weight, setWeight] = useState("");
   const [extraMeal, setExtraMeal] = useState("");
+  const [forceWeightUpdate, setForceWeightUpdate] = useState(false);
 
   /* ============================
      LOAD DATA
@@ -57,7 +59,18 @@ const DietPlanSlider = () => {
 
   useEffect(() => {
     if (error) {
-      message.error(error);
+      // Check for specific backend error about automatic generation
+      // "Diet plans are generated automatically after weekly weight updates."
+      if (
+        typeof error === "string" &&
+        error.toLowerCase().includes("generated automatically")
+      ) {
+        setForceWeightUpdate(true);
+        // We still show the error to explain WHY (or we could suppress it)
+        message.info("Please update your weight to generate a new plan.");
+      } else {
+        message.error(error);
+      }
     }
   }, [error]);
 
@@ -65,8 +78,9 @@ const DietPlanSlider = () => {
      BACKEND-DRIVEN UI STATE
   ============================ */
   const showGenerate =
-    !currentPlan ||
-    (!currentPlan.has_plan && currentPlan.can_generate);
+    !forceWeightUpdate &&
+    (!currentPlan ||
+      (!currentPlan.has_plan && currentPlan.can_generate));
 
   const isPending =
     currentPlan?.status === "pending";
@@ -75,7 +89,7 @@ const DietPlanSlider = () => {
     currentPlan?.status === "ready";
 
   const showWeightUpdate =
-    currentPlan?.can_update_weight;
+    currentPlan?.can_update_weight || forceWeightUpdate;
 
   /* ============================
      NORMALIZE PLAN
@@ -147,7 +161,12 @@ const DietPlanSlider = () => {
 
     dispatch(updateWeight({ weight_kg: weight }));
     setWeight("");
+    setForceWeightUpdate(false); // Reset forced state after update
   };
+    
+    const handleRefresh = () => {
+        dispatch(fetchCurrentDietPlan());
+    };
 
   /* ============================
      LOADING (FIRST LOAD ONLY)
@@ -187,19 +206,55 @@ const DietPlanSlider = () => {
           Generating Your Diet Plan
         </h3>
         <p className="text-gray-400 mb-6">
-          This may take a moment. Please don’t refresh.
+          This may take a moment.
         </p>
-        <div className="animate-pulse text-purple-400">
+        <div className="animate-pulse text-purple-400 mb-6">
           AI is building your plan…
         </div>
+        <button
+            onClick={handleRefresh}
+            className="flex items-center gap-2 mx-auto px-4 py-2 bg-gray-800 rounded-md hover:bg-gray-700 transition font-medium text-sm"
+        >
+            <RefreshCw size={16} />
+            Refresh Status
+        </button>
       </div>
     );
   }
-
+    
   /* ============================
-     SAFETY
+     FORCED WEIGHT UPDATE VIEW / NO PLAN VIEW
   ============================ */
-  if (!showPlan || !dietPlan) return null;
+  // If we have no plan data to show, but we are supposed to show weight update
+  if (!showPlan && !dietPlan) {
+      if (forceWeightUpdate) {
+          return (
+            <div className="bg-gray-900/60 border border-gray-800 rounded-xl p-6 text-center">
+                <h3 className="text-xl font-bold mb-2">Update Weight Required</h3>
+                <p className="text-gray-400 mb-6">
+                    Your previous diet plan has expired. Please update your weight to generate a new one.
+                </p>
+                
+                <div className="max-w-xs mx-auto flex gap-2">
+                  <input
+                    type="number"
+                    value={weight}
+                    onChange={(e) => setWeight(e.target.value)}
+                    placeholder="Enter weight (kg)"
+                    className="flex-1 bg-gray-800 rounded-md px-3 py-2 text-sm"
+                  />
+                  <button
+                    onClick={handleWeightUpdate}
+                    className="px-3 py-2 bg-blue-600 rounded-md"
+                  >
+                    <Weight size={16} />
+                  </button>
+                </div>
+            </div>
+          );
+      }
+      return null;
+  }
 
   /* ============================
      UI
@@ -207,6 +262,7 @@ const DietPlanSlider = () => {
   return (
     <div>
       {/* Header */}
+      {dietPlan && (
       <div className="mb-6 flex justify-between items-center">
         <div>
           <h3 className="text-2xl font-bold">Your AI Diet Plan</h3>
@@ -222,8 +278,10 @@ const DietPlanSlider = () => {
           Diet Plan Active
         </button>
       </div>
+      )}
 
       {/* Meals */}
+      {dietPlan && (
       <div className="space-y-4">
         {dietPlan.meals.map((meal) => {
           const locked = mealStatus?.[meal.meal_type] !== null;
@@ -304,8 +362,10 @@ const DietPlanSlider = () => {
           );
         })}
       </div>
+      )}
 
-      {/* Extra Meal */}
+      {/* Extra Meal - Only show if plan exists (usually) */}
+      {dietPlan && (
       <div className="mt-6 bg-gray-900/60 border border-gray-800 rounded-xl p-4">
         <h4 className="font-semibold mb-2">Extra Meal</h4>
         <div className="flex gap-2">
@@ -323,9 +383,10 @@ const DietPlanSlider = () => {
           </button>
         </div>
       </div>
+      )}
 
-      {/* Weight Update */}
-      {showWeightUpdate && (
+      {/* Weight Update (Standard) - Show if can_update_weight OR forceWeightUpdate AND dietPlan exists (to append to bottom) */}
+      {(showWeightUpdate && dietPlan) && (
         <div className="mt-6 bg-gray-900/60 border border-gray-800 rounded-xl p-4">
           <h4 className="font-semibold mb-2">Weekly Weight Update</h4>
           <div className="flex gap-2">
@@ -349,7 +410,7 @@ const DietPlanSlider = () => {
         </div>
       )}
 
-      {dietPlan.disclaimer && (
+      {dietPlan?.disclaimer && (
         <p className="mt-4 text-xs text-gray-500">
           {dietPlan.disclaimer}
         </p>
