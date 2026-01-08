@@ -314,9 +314,10 @@ const authSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchProfile.fulfilled, (state, action) => {
-        state.loading = false;
-        state.profile = action.payload;
-      })
+  state.loading = false;
+  state.profile = action.payload;
+  state.user = action.payload;   // ✅ CRITICAL
+})
       .addCase(fetchProfile.rejected, (state, action) => {
         state.loading = false;
         // if 401/invalid token, you might prefer to clear auth here

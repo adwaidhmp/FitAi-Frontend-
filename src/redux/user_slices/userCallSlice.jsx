@@ -72,7 +72,9 @@ const userCallSlice = createSlice({
     // ❌ WS EVENT
     callEnded(state) {
       state.incomingCall = null;
-      state.activeCall = null;
+      if (state.activeCall) {
+        state.activeCall.status = "ended";
+      }
     },
 
     clearUserCall(state) {
@@ -92,7 +94,9 @@ const userCallSlice = createSlice({
     // 🟥 HTTP END CALL (safety)
     builder.addCase(endCall.fulfilled, (state) => {
       state.incomingCall = null;
-      state.activeCall = null;
+      if (state.activeCall) {
+        state.activeCall.status = "ended";
+      }
     });
   },
 });

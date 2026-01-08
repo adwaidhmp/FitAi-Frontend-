@@ -69,7 +69,7 @@ const IncomingCallModal = () => {
     }
 
     // 🔥 REQUIRED: move to video screen
-    navigate(`/video-call/${call_id}`);
+    navigate(`/video-call/${call_id}`, { state: { isCaller: false } });
   };
 
   const handleReject = async (isAuto = false) => {

@@ -46,7 +46,21 @@ import PageNotFound from "./components/PageNotFound";
 import VideoCall from "./components/call_component/VideoCall";
 import IncomingCallModal from "./components/call_component/IncomingCallModal";
 import { useGlobalCallSocket } from "./hooks/useGlobalCallSocket";
+
+import { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchProfile } from "./redux/user_slices/authSlice";
+
 function App() {
+    const dispatch = useDispatch();
+  const { isAuthenticated } = useSelector((state) => state.auth);
+
+  // 1️⃣ Restore user/profile after refresh
+  useEffect(() => {
+    if (isAuthenticated) {
+      dispatch(fetchProfile());
+    }
+  }, [isAuthenticated, dispatch]);
   useGlobalCallSocket();
   return (
     <>

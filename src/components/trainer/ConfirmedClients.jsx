@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import { message } from "antd"; // ✅ ADDED
 
 /* APPROVAL */
 import {
@@ -109,11 +110,18 @@ const ConfirmedClients = () => {
   /* =======================
      ✅ CALL ACCEPTED → NAVIGATE
   ======================== */
+  /* =======================
+     ✅ CALL ACCEPTED → NAVIGATE
+  ======================== */
+  // ⚠️ REMOVED AUTO NAVIGATE ON ACCEPTED TO PREVENT CONFLICTS
+  // We navigate explicitly in handleVideoCall (Caller) or IncomingCallModal (Callee)
+  /*
   useEffect(() => {
     if (activeCall?.call_id) {
       navigate(`/video-call/${activeCall.call_id}`);
     }
   }, [activeCall, navigate]);
+  */
 
   /* =======================
      HANDLERS
@@ -169,14 +177,30 @@ const ConfirmedClients = () => {
   /* =======================
      🎥 VIDEO CALL (FIXED)
   ======================== */
+  /* =======================
+     🎥 VIDEO CALL (FIXED)
+  ======================== */
+  
+  // ✅ REMOVED: Waiting for 'accepted' status.
   const handleVideoCall = async () => {
     if (!activeRoomId || !selectedUser) return;
 
     try {
-      await dispatch(startCall(activeRoomId)).unwrap();
+      console.log("🎯 TARGETING USER ID:", selectedUser?.user_id);
+      const resultAction = await dispatch(startCall(activeRoomId));
+      if (startCall.fulfilled.match(resultAction)) {
+           const callId = resultAction.payload.call_id;
+           if (callId) {
+                // 🚀 NAVIGATE IMMEDIATELY AS CALLER
+                navigate(`/video-call/${callId}`, { state: { isCaller: true } });
+           }
+      }
 
-    } catch {
-      // optional toast if you want
+    } catch (err) {
+      console.error("Failed to start call:", err);
+      // import { message } from "antd"; make sure it is imported or available.
+      // It is not imported! I need to add import too.
+      // Wait, let me check imports first.
     }
   };
 

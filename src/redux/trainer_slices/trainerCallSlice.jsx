@@ -1,5 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import api from "../../api3"
+
+// ⚠️ FIX: Use Chat Service directly (8001) like User does, avoiding Proxy (8002) issues
+import api from "../../api5"
 
 /*
 |--------------------------------------------------------------------------
@@ -11,9 +13,12 @@ export const startCall = createAsyncThunk(
   "trainerCall/startCall",
   async (roomId, { rejectWithValue }) => {
     try {
+      console.log("🚀 TRAINER STARTING CALL...", roomId);
       const res = await api.post(`calls/start/${roomId}/`);
+      console.log("✅ TRAINER START CALL SUCCESS:", res.data);
       return res.data;
     } catch (err) {
+      console.error("❌ TRAINER START CALL FAILED:", err.response || err);
       return rejectWithValue(err.response?.data || "Start call failed");
     }
   }
@@ -70,7 +75,9 @@ const trainerCallSlice = createSlice({
     // ❌ WS EVENT
     callEnded(state) {
       state.incomingCall = null;
-      state.activeCall = null;
+      if (state.activeCall) {
+        state.activeCall.status = "ended";
+      }
     },
 
     clearTrainerCall(state) {

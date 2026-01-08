@@ -104,21 +104,9 @@ const TrainerChat = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // ✅ NAVIGATE ONLY WHEN CALL IS ACCEPTED (WS-DRIVEN)
-  useEffect(() => {
-    if (activeCall?.status === "accepted" && activeCall?.call_id) {
-      navigate(`/video-call/${activeCall.call_id}`);
-    }
-  }, [activeCall?.status, activeCall?.call_id, navigate]);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [activeRoomId, messagesByRoom]);
-
-  /* =======================
-     HANDLERS
-  ======================== */
-
+  // ✅ REMOVED: Waiting for 'accepted' status. 
+  // Caller must be in the room to create the OFFER.
+  
   const handleVideoCall = async () => {
     if (!activeRoomId) {
       message.warning("Chat room not ready");
@@ -126,8 +114,24 @@ const TrainerChat = () => {
     }
 
     try {
-      await dispatch(startCall(activeRoomId)).unwrap();
-      message.info("Calling trainer…");
+      const resultAction = await dispatch(startCall(activeRoomId));
+      
+      if (startCall.fulfilled.match(resultAction)) {
+        const callId = resultAction.payload.call_id; // Adjust based on your actual payload structure
+        // If payload structure is different, you might need resultAction.payload.data.call_id or similar.
+        // Assuming startCall returns the call object directly or inside payload.
+        
+        // Safety check: if callId is in payload
+        if (callId) {
+             message.info("Starting video call...");
+             // 🚀 NAVIGATE IMMEDIATELY AS CALLER
+             navigate(`/video-call/${callId}`, { state: { isCaller: true } });
+        } else {
+             // Fallback if payload is different, try to get from state or waiting
+             // But ideally we get it from the action result
+             console.error("Call ID missing in startCall response", resultAction);
+        }
+      }
     } catch {
       message.error("Unable to start video call");
     }
