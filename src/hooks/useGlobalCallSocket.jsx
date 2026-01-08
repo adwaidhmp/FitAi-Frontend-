@@ -126,5 +126,5 @@ export const useGlobalCallSocket = () => {
       console.warn("♻️ Closing GLOBAL CALL WS");
       ws.close();
     };
-  }, [token, role, dispatch]);
+  }, [token, role, dispatch, user]);
 };

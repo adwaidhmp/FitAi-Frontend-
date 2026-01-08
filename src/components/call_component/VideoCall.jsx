@@ -79,8 +79,9 @@ const VideoCall = () => {
       }
     } catch(err) {
         console.error("End call failed", err);
+        navigate(-1); // Only navigate manually if API/Dispatch fails
     } 
-    navigate(-1); 
+    // navigate(-1); // ❌ REMOVED: Prevent double navigation. Let useEffect handle it via status.
   };
   
   /* ⚡ LISTEN FOR REMOTE END CALL */

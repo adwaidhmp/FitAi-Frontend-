@@ -85,6 +85,34 @@ const trainerCallSlice = createSlice({
       state.activeCall = null;
     },
   },
+  extraReducers: (builder) => {
+    // 🟡 HTTP START CALL
+    builder.addCase(startCall.fulfilled, (state, action) => {
+      // action.payload should usually contain the call info. 
+      // Even if not complete, we must set a placeholder to allow status updates.
+      state.activeCall = {
+        ...action.payload,
+        status: "ringing", // or "started"
+      };
+    });
+
+    // 🟥 HTTP END CALL
+    builder.addCase(endCall.fulfilled, (state) => {
+      state.incomingCall = null;
+      if (state.activeCall) {
+        state.activeCall.status = "ended";
+      }
+    });
+
+    // ✅ HTTP ACCEPT CALL (Backup if WS is slow)
+    builder.addCase(acceptCall.fulfilled, (state, action) => {
+        state.activeCall = {
+            ...action.payload,
+            status: "accepted"
+        };
+        state.incomingCall = null;
+    });
+  },
 });
 
 export const {

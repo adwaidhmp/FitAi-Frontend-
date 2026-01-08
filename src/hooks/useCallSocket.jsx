@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { endCall as userEndCall } from "../redux/user_slices/userCallSlice";
+import { endCall as trainerEndCall } from "../redux/trainer_slices/trainerCallSlice";
 
 export const useCallSocket = ({ callId, isCaller }) => {
   const socketRef = useRef(null);
@@ -9,6 +11,9 @@ export const useCallSocket = ({ callId, isCaller }) => {
   const [localStream, setLocalStream] = useState(null);
   // Initial remote stream must be a new MediaStream for tracks to be added
   const [remoteStream, setRemoteStream] = useState(new MediaStream()); 
+
+  const dispatch = useDispatch();
+  const role = useSelector((state) => state.auth?.profile?.role || state.auth?.user?.role); 
 
   const localStreamRef = useRef(null); // Keep ref for tracks access in cleanup
 
@@ -112,23 +117,15 @@ export const useCallSocket = ({ callId, isCaller }) => {
           peerRef.current.addTrack(track, stream);
         });
 
-        // 🔥 ONLY CALLER CREATES OFFER
+        // 4️⃣ Notify presence & Initiate
+        console.log("👋 Sending CALL_CONNECTED");
+        ws.send(JSON.stringify({ type: "CALL_CONNECTED" }));
+
+        // 🔥 ONLY CALLER CREATES OFFER (Optimistic)
         if (isCaller) {
-          console.log("📞 Caller creating OFFER");
-
-          const offer = await peerRef.current.createOffer();
-          await peerRef.current.setLocalDescription(offer);
-
-          console.log("📨 Sending OFFER", offer);
-
-          ws.send(
-            JSON.stringify({
-              type: "CALL_OFFER",
-              offer,
-            })
-          );
+           await initiateOffer();
         } else {
-          console.log("📵 Callee waiting for OFFER");
+           console.log("📵 Callee waiting for OFFER");
         }
       } catch (err) {
         console.error("❌ Error during WS open setup", err);
@@ -154,11 +151,22 @@ export const useCallSocket = ({ callId, isCaller }) => {
         return;
       }
 
-      console.log("📨 WS MESSAGE PARSED:", data);
+      // console.log("📨 WS MESSAGE PARSED:", data);
 
       try {
         switch (data.type) {
+          case "CALL_CONNECTED": {
+              // 🤝 HANDSHAKE: Someone joined.
+              if (isCaller) {
+                  console.log("🤝 Peer joined (CALL_CONNECTED). Resending OFFER.");
+                  await initiateOffer();
+              }
+              break;
+          }
+
           case "CALL_OFFER": {
+            if (isCaller) return; // Ignore own offer if reflected
+
             console.log("📥 Received OFFER");
 
             await peerRef.current.setRemoteDescription(
@@ -189,7 +197,7 @@ export const useCallSocket = ({ callId, isCaller }) => {
           }
 
           case "CALL_ICE": {
-            console.log("🧊 Received ICE", data.candidate);
+            // console.log("🧊 Received ICE", data.candidate);
 
             if (data.candidate) {
               await peerRef.current.addIceCandidate(
@@ -201,6 +209,14 @@ export const useCallSocket = ({ callId, isCaller }) => {
 
           case "CALL_ENDED": {
             console.warn("📴 CALL ENDED received");
+            
+            // Dispatch cleanup actions to Redux to ensure UI updates
+            if (role === "trainer") {
+                dispatch(trainerEndCall(callId)); // Or just clear active call
+            } else {
+                dispatch(userEndCall(callId));
+            }
+            
             cleanup();
             break;
           }
@@ -213,6 +229,28 @@ export const useCallSocket = ({ callId, isCaller }) => {
         console.error("❌ Error handling WS message", err);
       }
     };
+
+    // Helper to Create and Send Offer
+    const initiateOffer = async () => {
+        if (!socketRef.current || !peerRef.current) return;
+        
+        console.log("📞 Creating OFFER...");
+        try {
+            const offer = await peerRef.current.createOffer();
+            await peerRef.current.setLocalDescription(offer);
+    
+            console.log("📨 Sending OFFER", offer);
+            socketRef.current.send(
+                JSON.stringify({
+                    type: "CALL_OFFER",
+                    offer,
+                })
+            );
+        } catch(e) {
+            console.error("❌ Error creating offer", e);
+        }
+    };
+
 
     /* =========================
        CLEANUP
