@@ -1,119 +1,164 @@
 import React from "react";
-import { Dumbbell, Brain, LineChart, Users } from "lucide-react";
+import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import {
+  Flame,
+  Dumbbell,
+  Scale,
+  Trophy,
+  Utensils,
+  Activity,
+  LineChart,
+  MessageSquare,
+  Sparkles,
+} from "lucide-react";
 
 const HomeLanding = () => {
   const navigate = useNavigate();
+  const { user } = useSelector((state) => state.auth);
+  const { data: profile } = useSelector((state) => state.profile);
+
+  const userName = user?.name || "Member";
+  const userWeight = profile?.weight || "--";
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      {/* HERO */}
-      <section className="max-w-7xl mx-auto px-6 py-20 text-center">
-        <h1 className="text-4xl md:text-5xl font-bold mb-4">
-          Your AI-Powered
-          <span className="block text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
-            Fitness Companion
-          </span>
-        </h1>
-
-        <p className="text-gray-400 max-w-2xl mx-auto mb-8">
-          Personalized diet plans, smart workouts, progress tracking, and
-          trainer support. All in one intelligent fitness platform.
-        </p>
-
-        <div className="flex justify-center gap-4">
-          <button
-            onClick={() => navigate("/diet")}
-            className="px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 font-semibold"
-          >
-            Get Started
-          </button>
-
-          <button
-            onClick={() => navigate("/trainer")}
-            className="px-6 py-3 rounded-xl border border-gray-700 text-gray-300 hover:bg-gray-800"
-          >
-            Explore Trainers
-          </button>
-        </div>
-      </section>
-
-      {/* FEATURES */}
-      <section className="max-w-7xl mx-auto px-6 py-16 grid grid-cols-1 md:grid-cols-4 gap-6">
-        {[
-          {
-            icon: <Brain className="w-6 h-6" />,
-            title: "AI Diet Planning",
-            desc: "Weekly adaptive meal plans generated from your body metrics and goals.",
-          },
-          {
-            icon: <Dumbbell className="w-6 h-6" />,
-            title: "Smart Workouts",
-            desc: "Personalized exercise routines designed to maximize results.",
-          },
-          {
-            icon: <LineChart className="w-6 h-6" />,
-            title: "Progress Tracking",
-            desc: "Visual analytics for calories, weight, and performance.",
-          },
-          {
-            icon: <Users className="w-6 h-6" />,
-            title: "Expert Trainers",
-            desc: "Chat and train with certified fitness professionals.",
-          },
-        ].map((f, i) => (
-          <div
-            key={i}
-            className="bg-gray-900 border border-gray-800 rounded-2xl p-6"
-          >
-            <div className="mb-4 text-purple-400">{f.icon}</div>
-            <h3 className="font-semibold mb-2">{f.title}</h3>
-            <p className="text-sm text-gray-400">{f.desc}</p>
+    <div className="text-white">
+      {/* Header Section */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-3xl font-bold mb-2">
+              Welcome,{" "}
+              <span className="text-transparent bg-clip-text bg-linear-to-r from-purple-400 to-pink-400">
+                {userName.split(" ")[0]}
+              </span>
+            </h2>
+            <p className="text-gray-400">
+              Track your progress and stay consistent
+            </p>
           </div>
-        ))}
-      </section>
-
-      {/* HOW IT WORKS */}
-      <section className="max-w-5xl mx-auto px-6 py-16">
-        <h2 className="text-2xl font-bold text-center mb-10">How It Works</h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
-          {[
-            ["Create Profile", "Tell us your body data and fitness goal"],
-            ["AI Generates Plan", "Diet and workout plans tailored to you"],
-            ["Track & Improve", "Weekly updates based on progress"],
-          ].map(([title, desc], i) => (
-            <div
-              key={i}
-              className="bg-gray-900 border border-gray-800 rounded-xl p-6"
+          <div className="hidden md:flex items-center gap-4">
+            <button
+              onClick={() => navigate("/home/exercise")}
+              className="px-4 py-2 bg-linear-to-r from-purple-600 to-pink-600 rounded-xl hover:opacity-90 transition-opacity font-semibold"
             >
-              <div className="text-purple-500 text-xl font-bold mb-2">
-                {i + 1}
+              Start Workout
+            </button>
+          </div>
+        </div>
+
+        {/* Stats Bar */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          {[
+            {
+              label: "Calories Burned",
+              value: "0", // Placeholder until connected to tracker
+              color: "text-orange-400",
+              icon: <Flame />,
+            },
+            {
+              label: "Workouts Done",
+              value: "0", // Placeholder
+              color: "text-blue-400",
+              icon: <Dumbbell />,
+            },
+            {
+              label: "Current Weight",
+              value: `${userWeight} kg`,
+              color: "text-purple-400",
+              icon: <Scale />,
+            },
+            {
+              label: "Day Streak",
+              value: "1", // Placeholder
+              color: "text-yellow-400",
+              icon: <Trophy />,
+            },
+          ].map((stat, index) => (
+            <div
+              key={index}
+              className="bg-gray-900/50 rounded-xl p-4 border border-gray-800"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className={`text-2xl font-bold ${stat.color}`}>
+                  {stat.value}
+                </div>
+                <span className={`${stat.color} opacity-80`}>{stat.icon}</span>
               </div>
-              <h3 className="font-semibold mb-1">{title}</h3>
-              <p className="text-sm text-gray-400">{desc}</p>
+              <div className="text-sm text-gray-400">{stat.label}</div>
             </div>
           ))}
         </div>
-      </section>
+      </div>
 
-      {/* CTA */}
-      <section className="py-16 text-center border-t border-gray-800">
-        <h2 className="text-2xl font-bold mb-4">
-          Start Your Fitness Journey Today
-        </h2>
-        <button
-          onClick={() => navigate("/diet")}
-          className="px-8 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 font-semibold"
-        >
-          Generate My Diet Plan
-        </button>
-      </section>
+      {/* Quick Actions Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Actions */}
+        <div className="bg-gray-900/50 border border-gray-800 rounded-2xl p-6">
+          <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+            <Sparkles className="text-yellow-400" size={20} />
+            Quick Actions
+          </h3>
+          <div className="grid grid-cols-2 gap-4">
+            {[
+              {
+                label: "Diet Plan",
+                icon: <Utensils size={24} />,
+                path: "/home/diet",
+                color: "bg-green-600/20 text-green-400",
+              },
+              {
+                label: "Workouts",
+                icon: <Activity size={24} />,
+                path: "/home/exercise",
+                color: "bg-blue-600/20 text-blue-400",
+              },
+              {
+                label: "My Progress",
+                icon: <LineChart size={24} />,
+                path: "/home/progress-dashboard",
+                color: "bg-purple-600/20 text-purple-400",
+              },
+              {
+                label: "Chat & Call",
+                icon: <MessageSquare size={24} />,
+                path: "/home/chat-call",
+                color: "bg-pink-600/20 text-pink-400",
+              },
+            ].map((action, idx) => (
+              <button
+                key={idx}
+                onClick={() => navigate(action.path)}
+                className="p-4 rounded-xl border border-gray-800 flex flex-col items-center justify-center gap-2 hover:bg-gray-800 transition-colors group"
+              >
+                <div
+                  className={`p-3 rounded-full ${action.color} group-hover:scale-110 transition-transform`}
+                >
+                  {action.icon}
+                </div>
+                <span className="font-semibold text-sm">{action.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
 
-      {/* FOOTER */}
-      <footer className="py-6 text-center text-sm text-gray-500">
-        © 2025 FitAI. AI-powered fitness and nutrition platform.
-      </footer>
+        {/* Daily Insight / Placeholder */}
+        <div className="bg-gray-900/50 border border-gray-800 rounded-2xl p-6 flex flex-col justify-center items-center text-center">
+          <div className="p-4 bg-gray-800 rounded-full mb-4">
+            <Sparkles className="w-8 h-8 text-purple-400" />
+          </div>
+          <h3 className="text-lg font-bold mb-2">Today's Focus</h3>
+          <p className="text-gray-400 text-sm mb-4">
+            "Consistency is key. Follow your diet and crush your workout today!"
+          </p>
+          <button
+            onClick={() => navigate("/home/diet")}
+            className="px-6 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm transition-colors"
+          >
+            Check Diet
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

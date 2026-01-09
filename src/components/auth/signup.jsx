@@ -33,15 +33,23 @@ const Signup = () => {
   const [showOtp, setShowOtp] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
 
-  const { loading, error, isAuthenticated, user } = useSelector(
-    (state) => state.auth,
-  );
+  const {
+    loading,
+    error,
+    isAuthenticated,
+    user,
+  } = useSelector((state) => state.auth);
+
+  const { data: profile } = useSelector((state) => state.profile);
 
   useEffect(() => {
-    if (isAuthenticated && user) {
+    // Only redirect if authenticated AND profile is fully set up
+    // This prevents the loop where a user with no profile gets bounced:
+    // Signup -> Home -> RequireProfile -> Signup
+    if (isAuthenticated && user && profile?.profile_completed) {
       navigate("/home");
     }
-  }, [isAuthenticated, user, navigate]);
+  }, [isAuthenticated, user, profile, navigate]);
 
   useEffect(() => {
     dispatch(clearError());

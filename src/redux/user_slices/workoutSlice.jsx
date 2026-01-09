@@ -89,6 +89,7 @@ export const fetchTodayWorkoutLogs = createAsyncThunk(
 
 const initialState = {
   plan: null,              // current workout plan
+  status: "idle",          // "idle" | "pending" | "ready" | "failed"
   loading: false,          // fetching plan
   generating: false,       // generating plan
   logging: false,          // logging exercise
@@ -126,8 +127,9 @@ const workoutSlice = createSlice({
       })
       .addCase(generateWorkout.fulfilled, (state, action) => {
         state.generating = false;
-        state.plan = action.payload; // ✅ STORE GENERATED PLAN
-        state.loggedExercises = {};  // new plan → reset logs
+        state.status = "pending"; // backend returns { status: "queued" } or similar
+        state.plan = null;        // clear old plan while new one builds
+        state.loggedExercises = {};
       })
       .addCase(generateWorkout.rejected, (state, action) => {
         state.generating = false;
@@ -141,11 +143,22 @@ const workoutSlice = createSlice({
       })
       .addCase(fetchCurrentWorkout.fulfilled, (state, action) => {
         state.loading = false;
-        state.plan = action.payload;
+        // Backend returns: { status: "...", plan: { ... } } (if ready)
+        // or { status: "..." } (if idle/pending/failed)
+        const { status, plan } = action.payload;
+        state.status = status;
+
+        if (status === "ready") {
+          state.plan = plan;
+        } else {
+          state.plan = null;
+        }
       })
       .addCase(fetchCurrentWorkout.rejected, (state, action) => {
         state.loading = false;
         state.plan = null;
+        // If 404/etc, assume idle
+        state.status = "idle";
         state.error = action.payload;
       })
 

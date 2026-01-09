@@ -27,10 +27,10 @@ const WORKOUT_CHOICES = [
 const ExerciseSlider = () => {
   const dispatch = useDispatch();
   const [selectedType, setSelectedType] = useState(null);
-  const [needsRefresh, setNeedsRefresh] = useState(false);
 
   const {
     plan = null,
+    status = "idle", // idle | pending | ready | failed
     loading = false,
     error = null,
     loggedExercises = {},
@@ -49,18 +49,54 @@ const ExerciseSlider = () => {
     };
   }, [dispatch]);
 
-  if (loading) {
+  if (loading && !plan && status !== "pending") {
     return <div className="text-gray-400">Loading workout...</div>;
   }
 
   if (error) {
-    return <div className="text-red-400">{error}</div>;
+    return (
+      <div className="text-red-400 bg-red-900/10 p-4 rounded-lg border border-red-500/30 text-center">
+        <p className="mb-2">{error}</p>
+        <button
+          onClick={() => dispatch(fetchCurrentWorkout())}
+          className="px-4 py-2 bg-red-900/30 rounded-lg hover:bg-red-900/50 transition"
+        >
+          Retry
+        </button>
+      </div>
+    );
   }
 
   /* =========================
-     NO PLAN / GENERATE FLOW
+     PENDING / GENERATING
   ========================= */
-  if (!plan) {
+  if (status === "pending") {
+    return (
+      <div className="text-center py-16 bg-gray-900/30 rounded-2xl border border-gray-800">
+        <h3 className="text-2xl font-bold mb-3">Generating Your Workout</h3>
+        <p className="text-gray-400 mb-6">
+          AI is building your weekly plan. This usually takes a few seconds.
+        </p>
+        <div className="animate-pulse text-blue-400 mb-8">
+          <Zap className="w-12 h-12 mx-auto mb-2" />
+          <span className="text-sm">Processing...</span>
+        </div>
+        <button
+          onClick={() => dispatch(fetchCurrentWorkout())}
+          className="flex items-center gap-2 mx-auto px-6 py-3 bg-blue-600 rounded-xl hover:bg-blue-500 transition font-bold"
+        >
+          <RefreshCw size={18} />
+          Refresh Status
+        </button>
+      </div>
+    );
+  }
+
+  /* =========================
+     IDLE / NO PLAN
+  ========================= */
+  // If we are 'idle', OR 'failed', OR 'ready' but no plan data (fallback)
+  if (status === "idle" || (status === "ready" && !plan)) {
     return (
       <div className="bg-gray-900/50 border border-gray-800 rounded-2xl p-8 text-center">
         <div className="flex justify-center mb-4">
@@ -69,56 +105,41 @@ const ExerciseSlider = () => {
           </div>
         </div>
 
-        <h3 className="text-2xl font-bold mb-2">
-          {needsRefresh ? "Workout Ready" : "Choose Your Workout Style"}
-        </h3>
+        <h3 className="text-2xl font-bold mb-2">Choose Your Workout Style</h3>
 
         <p className="text-gray-400 mb-6">
-          {needsRefresh
-            ? "Workout generated successfully. Refresh to load it."
-            : "Select a workout type and generate your weekly plan."}
+          Select a workout type and generate your weekly plan.
         </p>
 
-        {!needsRefresh && (
-          <div className="flex justify-center gap-3 mb-6">
-            {WORKOUT_CHOICES.map((choice) => (
-              <button
-                key={choice.value}
-                onClick={() => setSelectedType(choice.value)}
-                className={`px-4 py-2 rounded-xl border text-sm font-semibold ${
-                  selectedType === choice.value
-                    ? "bg-blue-600 border-blue-500"
-                    : "bg-gray-800 border-gray-700 text-gray-300"
-                }`}
-              >
-                {choice.label}
-              </button>
-            ))}
-          </div>
-        )}
+        <div className="flex justify-center gap-3 mb-6">
+          {WORKOUT_CHOICES.map((choice) => (
+            <button
+              key={choice.value}
+              onClick={() => setSelectedType(choice.value)}
+              className={`px-4 py-2 rounded-xl border text-sm font-semibold transition-all ${
+                selectedType === choice.value
+                  ? "bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-900/20"
+                  : "bg-gray-800 border-gray-700 text-gray-300 hover:border-gray-600"
+              }`}
+            >
+              {choice.label}
+            </button>
+          ))}
+        </div>
 
-        {!needsRefresh ? (
-          <button
-            disabled={!selectedType || generating}
-            onClick={async () => {
-              await dispatch(generateWorkout(selectedType));
-              setNeedsRefresh(true);
-            }}
-            className="px-6 py-3 bg-blue-600 rounded-xl font-semibold disabled:opacity-50"
-          >
-            Generate Workout
-          </button>
-        ) : (
-          <button
-            onClick={() => {
-              dispatch(fetchCurrentWorkout());
-              setNeedsRefresh(false);
-            }}
-            className="px-6 py-3 bg-green-600 rounded-xl font-semibold"
-          >
-            Refresh Workout
-          </button>
-        )}
+        <button
+          disabled={!selectedType || generating}
+          onClick={() => dispatch(generateWorkout(selectedType))}
+          className="px-8 py-3 bg-linear-to-r from-blue-600 to-indigo-600 rounded-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-all shadow-lg shadow-blue-500/20"
+        >
+          {generating ? (
+            <span className="flex items-center gap-2">
+              <RefreshCw className="w-4 h-4 animate-spin" /> Starting...
+            </span>
+          ) : (
+            "Generate Workout Plan"
+          )}
+        </button>
       </div>
     );
   }
@@ -126,30 +147,12 @@ const ExerciseSlider = () => {
   /* =========================
      SAFE SESSION ACCESS
   ========================= */
-  const session = plan.sessions?.sessions?.[0];
+  const session = plan?.sessions?.sessions?.[0];
   const exercises = session?.exercises || [];
 
   if (!session || exercises.length === 0) {
-    return (
-      <div className="text-center py-16">
-        <h3 className="text-2xl font-bold mb-3">
-          Generating Your Workout
-        </h3>
-        <p className="text-gray-400 mb-6">
-          This may take a moment.
-        </p>
-        <div className="animate-pulse text-blue-400 mb-6">
-          AI is building your workout plan…
-        </div>
-        <button
-          onClick={() => dispatch(fetchCurrentWorkout())}
-          className="flex items-center gap-2 mx-auto px-4 py-2 bg-gray-800 rounded-md hover:bg-gray-700 transition font-medium text-sm"
-        >
-          <RefreshCw size={16} />
-          Refresh Status
-        </button>
-      </div>
-    );
+    // If status is ready but data is missing/malformed, treat as error or empty
+    return <div className="text-gray-400">Workout data is empty.</div>;
   }
 
   /* =========================

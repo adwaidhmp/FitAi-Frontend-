@@ -1,12 +1,13 @@
 import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 import { fetchPremiumPlans } from "../../redux/user_slices/premiumSlice";
 
 const PremiumPlans = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const { plans, loading, error } = useSelector(
     (state) => state.premium
@@ -47,7 +48,9 @@ const PremiumPlans = () => {
 
             <button
               onClick={() =>
-                navigate(`/buy-premium/${plan.code}`)
+                navigate(`/buy-premium/${plan.code}`, {
+                  state: { from: location.state?.from },
+                })
               }
               className="w-full bg-black text-white py-2 rounded"
             >

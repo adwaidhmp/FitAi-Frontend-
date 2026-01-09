@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 
 import {
   createPremiumOrder,
@@ -33,6 +33,7 @@ const BuyPremium = () => {
   const { plan } = useParams();
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const { order, loading, success, error } = useSelector(
     (state) => state.premium
@@ -95,9 +96,10 @@ const BuyPremium = () => {
   useEffect(() => {
     if (success) {
       dispatch(resetPremiumState());
-      navigate(-2);
+      const from = location.state?.from?.pathname || location.state?.from || "/home";
+      navigate(from, { replace: true });
     }
-  }, [success, dispatch, navigate]);
+  }, [success, dispatch, navigate, location]);
 
   return (
     <div className="p-6 text-center">

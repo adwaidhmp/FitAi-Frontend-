@@ -17,14 +17,16 @@ const RequireProfile = () => {
     data: profile,
     loading: profileLoading,
     needsProfileSetup,
+    error: profileError,
   } = useSelector((state) => state.profile);
 
   // Fetch profile when authenticated and not yet loaded
   useEffect(() => {
-    if (isAuthenticated && !profile && !profileLoading) {
+    // Added profileError check to prevent infinite retries on 404/500
+    if (isAuthenticated && !profile && !profileLoading && !profileError) {
       dispatch(fetchUserProfile());
     }
-  }, [isAuthenticated, profile, profileLoading, dispatch]);
+  }, [isAuthenticated, profile, profileLoading, profileError, dispatch]);
 
   // 1. Not logged in -> go to login
   if (!isAuthenticated && !authLoading) {
@@ -32,11 +34,8 @@ const RequireProfile = () => {
   }
 
   // 2. While things are loading, block with loader
-  if (
-    authLoading ||
-    profileLoading ||
-    (isAuthenticated && !profile && !needsProfileSetup)
-  ) {
+  //    Wait for BOTH auth and profile to settle
+  if (authLoading || profileLoading) {
     return (
       <div className="w-full h-screen flex items-center justify-center bg-black text-gray-300">
         <span className="text-sm">
@@ -46,15 +45,27 @@ const RequireProfile = () => {
     );
   }
 
-  // 3. If profile is missing or incomplete, force profile form
-  //    But don't redirect if you're already on the form
-  if (needsProfileSetup && location.pathname !== PROFILE_FORM_PATH) {
-    return (
-      <Navigate to={PROFILE_FORM_PATH} state={{ from: location }} replace />
-    );
+  // 3. Logic for Profile Status
+
+  // Case A: Profile is completely missing (fetched but null) -> Go to Signup
+  // (User needs to register or re-register logic)
+  if (!profile) {
+    return <Navigate to="/signup" replace />;
   }
 
-  // 4. All good, render the child route
+  // Case B: Profile exists but incomplete -> Go to Profile Form
+  // (Only redirect if we aren't already there to avoid loop)
+  if (needsProfileSetup) {
+    if (location.pathname !== PROFILE_FORM_PATH) {
+      return (
+        <Navigate to={PROFILE_FORM_PATH} state={{ from: location }} replace />
+      );
+    }
+    // If we are on the form, allow rendering it
+    return <Outlet />;
+  }
+
+  // Case C: Profile is complete -> Access Granted
   return <Outlet />;
 };
 
