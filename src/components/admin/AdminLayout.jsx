@@ -18,6 +18,7 @@ import {
   LogoutOutlined,
   BellOutlined,
   SettingOutlined,
+  DollarOutlined,
 } from "@ant-design/icons";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
@@ -55,6 +56,11 @@ const AdminLayout = () => {
       icon: <SettingOutlined />,
       label: "Settings",
     },
+    {
+      key: "/admin/premium-plans",
+      icon: <DollarOutlined />,
+      label: "Premium Plans",
+    }
   ];
 
   const userMenuItems = [

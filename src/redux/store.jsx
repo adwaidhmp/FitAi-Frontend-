@@ -14,7 +14,8 @@ import trainerChatReducer from "./trainer_slices/trainerChatSlice.jsx";
 import userCallReducer from "./user_slices/userCallSlice.jsx";
 import trainerCallReducer from "./trainer_slices/trainerCallSlice.jsx";
 import trainerUserOverviewReducer from "./trainer_slices/trainerUserOverviewSlice.jsx";
-
+import adminPremiumReducer from "./admin_slices/admin_premiumPlanSlice.jsx";
+import premiumReducer from "./user_slices/premiumSlice.jsx";
 /* -------------------------------------------------------
    Combine all reducers
 ------------------------------------------------------- */
@@ -33,6 +34,8 @@ const appReducer = combineReducers({
   userCall: userCallReducer,
   trainerCall: trainerCallReducer,
   trainerUserOverview: trainerUserOverviewReducer,
+  adminPremium: adminPremiumReducer,
+  premium: premiumReducer,
 });
 
 /* -------------------------------------------------------

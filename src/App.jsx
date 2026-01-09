@@ -51,6 +51,10 @@ import { useGlobalCallSocket } from "./hooks/useGlobalCallSocket";
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchProfile } from "./redux/user_slices/authSlice";
+import AdminPremiumPlans from "./components/admin/PremiumPlan";
+import PremiumPlans from "./components/user/PremiumPlans";
+import BuyPremium from "./components/user/BuyPremium";
+import RequirePremium from "./components/user_routes/PremiumRoute";
 
 function App() {
     const dispatch = useDispatch();
@@ -83,6 +87,9 @@ function App() {
         {/* CALL */}
         <Route path="/video-call/:callId" element={<VideoCall />} />
 
+        <Route path="/premium-plans" element={<PremiumPlans />} />
+        <Route path="/buy-premium/:plan" element={<BuyPremium />} />
+
         {/* USER */}
         <Route element={<RequireProfile />}>
           <Route path="/profile_form" element={<ProfileForm />} />
@@ -92,8 +99,13 @@ function App() {
             <Route path="diet" element={<DietPlanSlider />} />
             <Route path="exercise" element={<ExerciseSlider />} />
             <Route path="progress-dashboard" element={<ProgressDashboard />} />
-            <Route path="trainer" element={<TrainerSlider />} />
-            <Route path="chat-call" element={<TrainerChat />} />
+
+            {/* 🔒 PREMIUM ONLY */}
+            <Route element={<RequirePremium />}>
+              <Route path="trainer" element={<TrainerSlider />} />
+              <Route path="chat-call" element={<TrainerChat />} />
+            </Route>
+
             <Route path="profile" element={<ProfilePage />} />
           </Route>
         </Route>
@@ -123,6 +135,7 @@ function App() {
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="users" element={<UserManagement />} />
             <Route path="trainers" element={<TrainerManagement />} />
+            <Route path="premium-plans" element={<AdminPremiumPlans/>}/>
           </Route>
         </Route>
 
