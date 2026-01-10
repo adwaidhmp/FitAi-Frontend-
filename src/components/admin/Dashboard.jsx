@@ -1,203 +1,122 @@
 import React from "react";
-import { Row, Col, Card, Statistic, Typography, Space } from "antd";
 import {
-  TeamOutlined,
-  UserOutlined,
-  CheckCircleOutlined,
-  ClockCircleOutlined,
-  ArrowUpOutlined,
-  ArrowDownOutlined,
-  SettingOutlined,
-} from "@ant-design/icons";
-
-const { Title, Text } = Typography;
+  Users,
+  Dumbbell,
+  CreditCard,
+  Activity,
+  ArrowUpRight,
+  TrendingUp,
+  UserPlus
+} from "lucide-react";
 
 const Dashboard = () => {
+  // Placeholder stats - in a real app, these would come from an API
+  // Since we removed fake data, we show neutral or empty states
   const stats = [
     {
-      title: "Total Users",
-      value: 1242,
-      icon: <UserOutlined className="text-blue-500 text-xl" />,
-      change: 12,
-      isPositive: true,
-      color: "blue",
+      label: "Total Users",
+      value: "--",
+      icon: <Users size={24} />,
+      color: "bg-blue-500/10 text-blue-500 border-blue-500/20",
     },
     {
-      title: "Total Trainers",
-      value: 86,
-      icon: <TeamOutlined className="text-green-500 text-xl" />,
-      change: 8,
-      isPositive: true,
-      color: "green",
+      label: "Active Trainers",
+      value: "--",
+      icon: <Dumbbell size={24} />,
+      color: "bg-green-500/10 text-green-500 border-green-500/20",
     },
     {
-      title: "Approved Trainers",
-      value: 72,
-      icon: <CheckCircleOutlined className="text-purple-500 text-xl" />,
-      change: 5,
-      isPositive: true,
-      color: "purple",
+      label: "Revenue",
+      value: "--",
+      icon: <CreditCard size={24} />,
+      color: "bg-purple-500/10 text-purple-500 border-purple-500/20",
     },
     {
-      title: "Pending Approvals",
-      value: 14,
-      icon: <ClockCircleOutlined className="text-orange-500 text-xl" />,
-      change: -2,
-      isPositive: false,
-      color: "orange",
-    },
-  ];
-
-  const recentActivities = [
-    { id: 1, user: "John Doe", action: "User registered", time: "2 min ago" },
-    {
-      id: 2,
-      user: "Jane Smith",
-      action: "Trainer approved",
-      time: "15 min ago",
-    },
-    {
-      id: 3,
-      user: "Mike Johnson",
-      action: "Account deactivated",
-      time: "1 hour ago",
-    },
-    {
-      id: 4,
-      user: "Sarah Wilson",
-      action: "Profile updated",
-      time: "2 hours ago",
+      label: "Pending Approvals",
+      value: "--",
+      icon: <Activity size={24} />,
+      color: "bg-orange-500/10 text-orange-500 border-orange-500/20",
     },
   ];
 
   return (
-    <div>
-      <Title level={2} className="mb-6">
-        Dashboard Overview
-      </Title>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-white">Dashboard Overview</h2>
+          <p className="text-gray-400 text-sm">Welcome back, Admin</p>
+        </div>
+      </div>
 
-      <Row gutter={[24, 24]} className="mb-8">
+      {/* STATS GRID */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat, index) => (
-          <Col xs={24} sm={12} lg={6} key={index}>
-            <Card className="rounded-xl shadow-sm border border-opacity-20">
-              <Space size="middle" className="mb-4">
-                <div className={`p-3 rounded-lg bg-${stat.color}-100`}>
-                  {stat.icon}
-                </div>
-                <div>
-                  <Text type="secondary" className="text-sm">
-                    {stat.title}
-                  </Text>
-                  <Title level={3} className="mt-1 mb-0">
-                    {stat.value.toLocaleString()}
-                  </Title>
-                </div>
-              </Space>
-              <div className="flex items-center gap-2">
-                {stat.isPositive ? (
-                  <ArrowUpOutlined className="text-green-500" />
-                ) : (
-                  <ArrowDownOutlined className="text-red-500" />
-                )}
-                <Text
-                  className={`text-sm ${stat.isPositive ? "text-green-500" : "text-red-500"}`}
-                >
-                  {stat.change > 0 ? "+" : ""}
-                  {stat.change}% from last month
-                </Text>
+          <div
+            key={index}
+            className="bg-gray-900 border border-gray-800 rounded-xl p-6"
+          >
+            <div className="flex items-start justify-between mb-4">
+              <div
+                className={`p-3 rounded-lg border ${stat.color}`}
+              >
+                {stat.icon}
               </div>
-            </Card>
-          </Col>
+              <span className="flex items-center text-xs text-green-400 bg-green-900/20 px-2 py-1 rounded-full border border-green-900/30">
+                <TrendingUp size={12} className="mr-1" />
+                Live
+              </span>
+            </div>
+            <div>
+              <p className="text-gray-400 text-sm">{stat.label}</p>
+              <h3 className="text-2xl font-bold text-white mt-1">
+                {stat.value}
+              </h3>
+            </div>
+          </div>
         ))}
-      </Row>
+      </div>
 
-      <Row gutter={[24, 24]}>
-        <Col xs={24} lg={12}>
-          <Card
-            title={
-              <Title level={4} className="m-0">
-                Recent Activities
-              </Title>
-            }
-            className="rounded-xl shadow-sm h-full"
-          >
-            <Space direction="vertical" size="middle" className="w-full">
-              {recentActivities.map((activity) => (
-                <div
-                  key={activity.id}
-                  className="flex justify-between items-center p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-all duration-300"
-                >
-                  <div>
-                    <Text strong>{activity.user}</Text>
-                    <Text type="secondary" className="block">
-                      {activity.action}
-                    </Text>
-                  </div>
-                  <Text type="secondary">{activity.time}</Text>
-                </div>
-              ))}
-            </Space>
-          </Card>
-        </Col>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* RECENT ACTIVITY PLACEHOLDER */}
+        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-bold text-white">Recent Activity</h3>
+            <button className="text-sm text-purple-400 hover:text-purple-300">
+              View All
+            </button>
+          </div>
+          <div className="flex flex-col items-center justify-center h-64 text-center text-gray-500">
+             <Activity size={48} className="mb-4 opacity-20" />
+             <p>No recent activities found</p>
+          </div>
+        </div>
 
-        <Col xs={24} lg={12}>
-          <Card
-            title={
-              <Title level={4} className="m-0">
-                Quick Actions
-              </Title>
-            }
-            className="rounded-xl shadow-sm h-full"
-          >
-            <Row gutter={[16, 16]}>
-              <Col span={12}>
-                <Card
-                  hoverable
-                  className="text-center rounded-lg border border-dashed border-gray-300"
-                >
-                  <UserOutlined className="text-xl text-blue-500" />
-                  <div className="mt-2">
-                    <Text strong>Add New User</Text>
-                  </div>
-                </Card>
-              </Col>
-              <Col span={12}>
-                <Card
-                  hoverable
-                  className="text-center rounded-lg border border-dashed border-gray-300"
-                >
-                  <TeamOutlined className="text-xl text-green-500" />
-                  <div className="mt-2">
-                    <Text strong>Review Trainers</Text>
-                  </div>
-                </Card>
-              </Col>
-              <Col span={12}>
-                <Card
-                  hoverable
-                  className="text-center rounded-lg border border-dashed border-gray-300"
-                >
-                  <SettingOutlined className="text-xl text-purple-500" />
-                  <div className="mt-2">
-                    <Text strong>System Settings</Text>
-                  </div>
-                </Card>
-              </Col>
-              <Col span={12}>
-                <Card
-                  hoverable
-                  className="text-center rounded-lg border border-dashed border-gray-300"
-                >
-                  <ClockCircleOutlined className="text-xl text-orange-500" />
-                  <div className="mt-2">
-                    <Text strong>View Logs</Text>
-                  </div>
-                </Card>
-              </Col>
-            </Row>
-          </Card>
-        </Col>
-      </Row>
+        {/* QUICK ACTIONS */}
+        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+          <h3 className="text-lg font-bold text-white mb-6">Quick Actions</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <button className="p-4 rounded-xl border border-gray-800 bg-black/20 hover:bg-gray-800 hover:border-purple-500/50 transition-all group text-left">
+              <div className="w-10 h-10 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                <UserPlus size={20} />
+              </div>
+              <h4 className="font-semibold text-white">Review Trainers</h4>
+              <p className="text-xs text-gray-400 mt-1">
+                Check pending applications
+              </p>
+            </button>
+
+            <button className="p-4 rounded-xl border border-gray-800 bg-black/20 hover:bg-gray-800 hover:border-purple-500/50 transition-all group text-left">
+              <div className="w-10 h-10 rounded-full bg-purple-500/10 text-purple-500 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                <CreditCard size={20} />
+              </div>
+              <h4 className="font-semibold text-white">Update Plans</h4>
+              <p className="text-xs text-gray-400 mt-1">
+                Manage premium pricing
+              </p>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

@@ -1,36 +1,20 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
-  Table,
-  Button,
-  Space,
-  Input,
-  Tag,
-  Modal,
-  Switch,
-  Typography,
-  Card,
-  Row,
-  Col,
-  Statistic,
-  message,
-  Tooltip,
-  Badge,
-  Avatar,
-} from "antd";
-import {
-  SearchOutlined,
-  ReloadOutlined,
-  UserOutlined,
-  EyeOutlined,
-} from "@ant-design/icons";
+  Search,
+  RefreshCw,
+  Eye,
+  ToggleLeft,
+  ToggleRight,
+  User as UserIcon,
+  Shield,
+  ShieldCheck,
+  X
+} from "lucide-react";
 import {
   fetchUsers,
   updateUserStatus,
 } from "../../redux/admin_slices/admin_user_trainer_approve";
-
-const { Title, Text } = Typography;
-const { Search } = Input;
 
 const UserManagement = () => {
   const dispatch = useDispatch();
@@ -39,7 +23,6 @@ const UserManagement = () => {
   const [searchText, setSearchText] = useState("");
   const [filterActive, setFilterActive] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [isModalVisible, setIsModalVisible] = useState(false);
 
   useEffect(() => {
     dispatch(fetchUsers());
@@ -53,7 +36,7 @@ const UserManagement = () => {
       data = data.filter(
         (u) =>
           u.email?.toLowerCase().includes(q) ||
-          u.name?.toLowerCase().includes(q),
+          u.name?.toLowerCase().includes(q)
       );
     }
 
@@ -67,192 +50,192 @@ const UserManagement = () => {
   const handleStatusChange = async (userId, is_active) => {
     try {
       await dispatch(updateUserStatus({ userId, is_active })).unwrap();
-      message.success(`User ${is_active ? "activated" : "deactivated"}`);
     } catch {
-      message.error("Failed to update status");
+      // Error handled in slice/toast usually
     }
   };
 
-  const columns = [
-    {
-      title: "User",
-      key: "user",
-      render: (_, record) => (
-        <Space>
-          <Avatar
-            icon={<UserOutlined />}
-            className={record.is_active ? "bg-blue-500" : "bg-gray-300"}
-          />
-          <div>
-            <div className="font-medium">{record.name || "Unknown User"}</div>
-            <Text type="secondary" className="text-xs">
-              {record.email}
-            </Text>
-          </div>
-        </Space>
-      ),
-    },
-    {
-      title: "Role",
-      dataIndex: "role",
-      key: "role",
-      render: (role) => (
-        <Tag
-          color={
-            role === "admin" ? "red" : role === "trainer" ? "blue" : "default"
-          }
-        >
-          {role?.toUpperCase()}
-        </Tag>
-      ),
-    },
-    {
-      title: "Status",
-      dataIndex: "is_active",
-      key: "status",
-      render: (is_active) => (
-        <Badge
-          status={is_active ? "success" : "error"}
-          text={is_active ? "Active" : "Inactive"}
-        />
-      ),
-    },
-    {
-      title: "Joined",
-      dataIndex: "date_joined",
-      key: "date_joined",
-      render: (date) => (date ? new Date(date).toLocaleDateString() : "-"),
-    },
-    {
-      title: "Actions",
-      key: "actions",
-      render: (_, record) => (
-        <Space>
-          <Tooltip title="View details">
-            <Button
-              type="text"
-              icon={<EyeOutlined />}
-              onClick={() => {
-                setSelectedUser(record);
-                setIsModalVisible(true);
-              }}
-            />
-          </Tooltip>
-
-          <Tooltip title={record.is_active ? "Deactivate" : "Activate"}>
-            <Switch
-              checked={record.is_active}
-              onChange={(checked) => handleStatusChange(record.id, checked)}
-              size="small"
-            />
-          </Tooltip>
-        </Space>
-      ),
-    },
-  ];
-
-  const stats = {
-    total: users.length,
-    active: users.filter((u) => u.is_active).length,
-    inactive: users.filter((u) => !u.is_active).length,
-  };
-
   return (
-    <div>
-      <Title level={2}>User Management</Title>
-
-      <Row gutter={[24, 24]} className="mb-6">
-        <Col xs={24} md={8}>
-          <Card>
-            <Statistic title="Total Users" value={stats.total} />
-          </Card>
-        </Col>
-        <Col xs={24} md={8}>
-          <Card>
-            <Statistic title="Active Users" value={stats.active} />
-          </Card>
-        </Col>
-        <Col xs={24} md={8}>
-          <Card>
-            <Statistic title="Inactive Users" value={stats.inactive} />
-          </Card>
-        </Col>
-      </Row>
-
-      <Card>
-        <div className="flex justify-between items-center mb-4 flex-wrap gap-4">
-          <Search
-            placeholder="Search by name or email"
-            allowClear
-            enterButton={<SearchOutlined />}
-            className="w-full md:w-72"
-            onChange={(e) => setSearchText(e.target.value)}
-            onSearch={setSearchText}
-          />
-
-          <Space>
-            <Button.Group>
-              <Button
-                type={filterActive === null ? "primary" : "default"}
-                onClick={() => setFilterActive(null)}
-              >
-                All
-              </Button>
-              <Button
-                type={filterActive === true ? "primary" : "default"}
-                onClick={() => setFilterActive(true)}
-              >
-                Active
-              </Button>
-              <Button
-                type={filterActive === false ? "primary" : "default"}
-                onClick={() => setFilterActive(false)}
-              >
-                Inactive
-              </Button>
-            </Button.Group>
-
-            <Tooltip title="Refresh">
-              <Button
-                icon={<ReloadOutlined />}
-                onClick={() => dispatch(fetchUsers())}
-                loading={loadingUsers}
-              />
-            </Tooltip>
-          </Space>
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-white">User Management</h2>
+          <p className="text-gray-400 text-sm">
+            Manage user accounts and roles
+          </p>
         </div>
+        <div className="flex gap-2">
+            <button
+                onClick={() => dispatch(fetchUsers())}
+                className="p-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors"
+                disabled={loadingUsers}
+            >
+                <RefreshCw size={20} className={loadingUsers ? "animate-spin" : ""} />
+            </button>
+        </div>
+      </div>
 
-        <Table
-          rowKey="id"
-          columns={columns}
-          dataSource={filteredUsers}
-          loading={loadingUsers}
-          pagination={{ pageSize: 10 }}
-        />
-      </Card>
+      {/* FILTERS & SEARCH */}
+      <div className="flex flex-col md:flex-row gap-4 bg-gray-900 border border-gray-800 p-4 rounded-xl">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={20} />
+          <input
+            type="text"
+            placeholder="Search users..."
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            className="w-full bg-black border border-gray-800 text-white pl-10 pr-4 py-2 rounded-lg focus:outline-none focus:border-purple-500 transition-colors"
+          />
+        </div>
+        <div className="flex bg-black border border-gray-800 rounded-lg p-1">
+          {[
+            { label: "All", value: null },
+            { label: "Active", value: true },
+            { label: "Inactive", value: false },
+          ].map((tab) => (
+            <button
+              key={tab.label}
+              onClick={() => setFilterActive(tab.value)}
+              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                filterActive === tab.value
+                  ? "bg-gray-800 text-white"
+                  : "text-gray-400 hover:text-white"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
-      <Modal
-        title="User Details"
-        open={isModalVisible}
-        onCancel={() => setIsModalVisible(false)}
-        footer={<Button onClick={() => setIsModalVisible(false)}>Close</Button>}
-      >
-        {selectedUser && (
-          <>
-            <Text strong>Email:</Text>
-            <div>{selectedUser.email}</div>
+      {/* TABLE */}
+      <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-gray-900/50 border-b border-gray-800 text-gray-400 text-sm uppercase tracking-wider">
+                <th className="p-4 font-medium">User</th>
+                <th className="p-4 font-medium">Role</th>
+                <th className="p-4 font-medium">Status</th>
+                <th className="p-4 font-medium">Joined</th>
+                <th className="p-4 font-medium text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-800">
+              {filteredUsers.length === 0 ? (
+                <tr>
+                   <td colSpan="5" className="p-8 text-center text-gray-500">
+                       No users found.
+                   </td>
+                </tr>
+              ) : (
+                filteredUsers.map((user) => (
+                    <tr key={user.id} className="hover:bg-gray-800/50 transition-colors">
+                    <td className="p-4">
+                        <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${user.is_active ? 'bg-blue-900/30 text-blue-400' : 'bg-gray-800 text-gray-500'}`}>
+                            <UserIcon size={20} />
+                        </div>
+                        <div>
+                            <div className="font-medium text-white">{user.name || "Unknown"}</div>
+                            <div className="text-sm text-gray-500">{user.email}</div>
+                        </div>
+                        </div>
+                    </td>
+                    <td className="p-4">
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium border ${
+                            user.role === 'admin' ? 'bg-red-900/20 text-red-400 border-red-900/30' :
+                            user.role === 'trainer' ? 'bg-purple-900/20 text-purple-400 border-purple-900/30' :
+                            'bg-gray-800 text-gray-300 border-gray-700'
+                        }`}>
+                            {user.role === 'admin' ? <ShieldCheck size={12}/> : <UserIcon size={12}/>}
+                            {user.role?.toUpperCase()}
+                        </span>
+                    </td>
+                    <td className="p-4">
+                        <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
+                            user.is_active ? 'bg-green-900/20 text-green-400' : 'bg-red-900/20 text-red-400'
+                        }`}>
+                            {user.is_active ? "Active" : "Inactive"}
+                        </span>
+                    </td>
+                    <td className="p-4 text-gray-400 text-sm">
+                        {user.date_joined ? new Date(user.date_joined).toLocaleDateString() : "-"}
+                    </td>
+                    <td className="p-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                        <button
+                            onClick={() => setSelectedUser(user)}
+                            className="p-2 hover:bg-gray-700 rounded-lg text-gray-400 hover:text-white transition-colors"
+                        >
+                            <Eye size={18} />
+                        </button>
+                        <button
+                            onClick={() => handleStatusChange(user.id, !user.is_active)}
+                            className={`p-2 hover:bg-gray-700 rounded-lg transition-colors ${user.is_active ? 'text-green-400 hover:text-red-400' : 'text-gray-500 hover:text-green-400'}`}
+                        >
+                            {user.is_active ? <ToggleRight size={20} /> : <ToggleLeft size={20} />}
+                        </button>
+                        </div>
+                    </td>
+                    </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-            <Text strong>Role:</Text>
-            <div>{selectedUser.role}</div>
+      {/* USER DETAIL MODAL */}
+      {selectedUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+            <div className="p-4 border-b border-gray-800 flex justify-between items-center bg-gray-900">
+              <h3 className="text-lg font-bold text-white">User Details</h3>
+              <button
+                onClick={() => setSelectedUser(null)}
+                className="text-gray-400 hover:text-white"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+                <div className="flex justify-center mb-6">
+                    <div className={`w-20 h-20 rounded-full flex items-center justify-center text-3xl ${selectedUser.is_active ? 'bg-blue-900/20 text-blue-400' : 'bg-gray-800 text-gray-500'}`}>
+                        {selectedUser.name?.[0]?.toUpperCase() || <UserIcon size={32}/>}
+                    </div>
+                </div>
 
-            <Text strong>Status:</Text>
-            <div>{selectedUser.is_active ? "Active" : "Inactive"}</div>
-
-            <Text strong>Joined:</Text>
-            <div>{new Date(selectedUser.created_at).toLocaleDateString()}</div>
-          </>
-        )}
-      </Modal>
+                <div className="space-y-3">
+                    <div className="flex justify-between py-2 border-b border-gray-800">
+                        <span className="text-gray-400">Name</span>
+                        <span className="text-white font-medium">{selectedUser.name || "N/A"}</span>
+                    </div>
+                    <div className="flex justify-between py-2 border-b border-gray-800">
+                        <span className="text-gray-400">Email</span>
+                        <span className="text-white font-medium">{selectedUser.email}</span>
+                    </div>
+                    <div className="flex justify-between py-2 border-b border-gray-800">
+                        <span className="text-gray-400">Role</span>
+                        <span className="text-white font-medium capitalize">{selectedUser.role}</span>
+                    </div>
+                    <div className="flex justify-between py-2 border-b border-gray-800">
+                        <span className="text-gray-400">Status</span>
+                        <span className={selectedUser.is_active ? "text-green-400" : "text-red-400"}>
+                            {selectedUser.is_active ? "Active" : "Inactive"}
+                        </span>
+                    </div>
+                    <div className="flex justify-between py-2 border-b border-gray-800">
+                        <span className="text-gray-400">Joined</span>
+                        <span className="text-white font-medium">
+                            {selectedUser.created_at ? new Date(selectedUser.created_at).toLocaleDateString() : "-"}
+                        </span>
+                    </div>
+                </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

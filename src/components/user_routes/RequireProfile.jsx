@@ -35,7 +35,14 @@ const RequireProfile = () => {
 
   // 2. While things are loading, block with loader
   //    Wait for BOTH auth and profile to settle
-  if (authLoading || profileLoading) {
+  // 2. While things are loading, block with loader
+  //    Wait for BOTH auth and profile to settle
+  //    Also wait if profile is null but no error yet (initial load race condition)
+  if (
+    authLoading ||
+    profileLoading ||
+    (isAuthenticated && !profile && !profileError)
+  ) {
     return (
       <div className="w-full h-screen flex items-center justify-center bg-black text-gray-300">
         <span className="text-sm">

@@ -1,34 +1,21 @@
 import React, { useState } from "react";
-import {
-  Layout,
-  Menu,
-  Avatar,
-  Dropdown,
-  Space,
-  Badge,
-  Button,
-  Typography,
-} from "antd";
-import {
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
-  UserOutlined,
-  TeamOutlined,
-  DashboardOutlined,
-  LogoutOutlined,
-  BellOutlined,
-  SettingOutlined,
-  DollarOutlined,
-} from "@ant-design/icons";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
+import {
+  LayoutDashboard,
+  Users,
+  Dumbbell,
+  CreditCard,
+  Settings,
+  LogOut,
+  Menu,
+  X,
+  User as UserIcon,
+} from "lucide-react";
 import { logoutUser } from "../../redux/user_slices/authSlice";
 
-const { Header, Sider, Content } = Layout;
-const { Title } = Typography;
-
 const AdminLayout = () => {
-  const [collapsed, setCollapsed] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch();
@@ -37,164 +24,122 @@ const AdminLayout = () => {
 
   const menuItems = [
     {
-      key: "/admin/dashboard",
-      icon: <DashboardOutlined />,
+      path: "/admin/dashboard",
+      icon: <LayoutDashboard size={20} />,
       label: "Dashboard",
     },
     {
-      key: "/admin/users",
-      icon: <UserOutlined />,
+      path: "/admin/users",
+      icon: <Users size={20} />,
       label: "User Management",
     },
     {
-      key: "/admin/trainers",
-      icon: <TeamOutlined />,
+      path: "/admin/trainers",
+      icon: <Dumbbell size={20} />,
       label: "Trainer Management",
     },
     {
-      key: "/admin/settings",
-      icon: <SettingOutlined />,
-      label: "Settings",
-    },
-    {
-      key: "/admin/premium-plans",
-      icon: <DollarOutlined />,
+      path: "/admin/premium-plans",
+      icon: <CreditCard size={20} />,
       label: "Premium Plans",
-    }
-  ];
-
-  const userMenuItems = [
-    {
-      key: "profile",
-      icon: <UserOutlined />,
-      label: "Profile",
     },
     {
-      key: "settings",
-      icon: <SettingOutlined />,
+      path: "/admin/settings",
+      icon: <Settings size={20} />,
       label: "Settings",
     },
-    {
-      type: "divider",
-    },
-    {
-      key: "logout",
-      icon: <LogoutOutlined />,
-      label: "Logout",
-      danger: true,
-    },
   ];
 
-  const handleUserMenuClick = async ({ key }) => {
-    if (key === "logout") {
-      await dispatch(logoutUser());
-      navigate("/login", { replace: true });
-      return;
-    }
-
-    if (key === "profile") {
-      navigate("/admin/profile");
-    }
-
-    if (key === "settings") {
-      navigate("/admin/settings");
-    }
-  };
-
-  const handleNavigation = ({ key }) => {
-    navigate(key);
+  const handleLogout = async () => {
+    await dispatch(logoutUser());
+    navigate("/login", { replace: true });
   };
 
   return (
-    <Layout className="min-h-screen">
-      <Sider
-        trigger={null}
-        collapsible
-        collapsed={collapsed}
-        width={250}
-        className="bg-white shadow-md"
+    <div className="flex h-screen bg-black text-white overflow-hidden">
+      {/* SIDEBAR */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-gray-900 border-r border-gray-800 transition-transform duration-300 md:translate-x-0 ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
       >
-        <div className="p-6 text-center border-b border-gray-200">
-          <Title
-            level={3}
-            className={`m-0 text-blue-500 ${collapsed ? "truncate" : ""}`}
+        <div className="flex items-center justify-between p-6">
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+            Admin Panel
+          </h1>
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="md:hidden text-gray-400 hover:text-white"
           >
-            {collapsed ? "AD" : "ADMIN PANEL"}
-          </Title>
+            <X />
+          </button>
         </div>
 
-        <Menu
-          mode="inline"
-          selectedKeys={[location.pathname]}
-          onClick={handleNavigation}
-          items={menuItems}
-          className="border-r-0 p-4"
-        />
-
-        <div className="absolute bottom-0 w-full p-4 border-t border-gray-200">
-          <div className="flex items-center gap-3 p-2">
-            <Avatar className="bg-blue-500" icon={<UserOutlined />} />
-            {!collapsed && (
-              <div className="flex-1 overflow-hidden">
-                <div className="font-medium text-sm">
-                  {user?.email || "Admin"}
-                </div>
-                <div className="text-xs text-gray-500">
-                  {user?.role?.toUpperCase() || "ADMIN"}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </Sider>
-
-      <Layout>
-        <Header className="px-6 bg-white flex items-center justify-between shadow-sm">
-          <Button
-            type="text"
-            icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-            onClick={() => setCollapsed(!collapsed)}
-            className="text-base w-16 h-16"
-          />
-
-          <Space size="large">
-            <Badge count={5} size="small">
-              <Button
-                type="text"
-                icon={<BellOutlined className="text-lg" />}
-                shape="circle"
-              />
-            </Badge>
-
-            <Dropdown
-              placement="bottomRight"
-              menu={{
-                items: userMenuItems,
-                onClick: handleUserMenuClick,
+        <nav className="px-4 py-4 space-y-2">
+          {menuItems.map((item) => (
+            <button
+              key={item.path}
+              onClick={() => {
+                navigate(item.path);
+                setSidebarOpen(false);
               }}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${
+                location.pathname === item.path
+                  ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium"
+                  : "text-gray-400 hover:bg-gray-800 hover:text-white"
+              }`}
             >
-              <div className="cursor-pointer flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 transition">
-                <Avatar className="bg-blue-500" icon={<UserOutlined />} />
-                <div>
-                  <div className="font-medium text-sm">
-                    {user?.email || "Admin"}
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    {user?.role?.toUpperCase() || "ADMIN"}
-                  </div>
+              {item.icon}
+              <span>{item.label}</span>
+            </button>
+          ))}
+        </nav>
+
+        <div className="absolute bottom-0 w-full p-4 border-t border-gray-800">
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-colors"
+          >
+            <LogOut size={20} />
+            <span>Logout</span>
+          </button>
+        </div>
+      </aside>
+
+      {/* MAIN CONTENT */}
+      <div className="flex-1 flex flex-col md:ml-64 relative">
+        {/* HEADER */}
+        <header className="h-16 border-b border-gray-800 bg-black/50 backdrop-blur flex items-center justify-between px-6 sticky top-0 z-40">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="md:hidden text-gray-400"
+          >
+            <Menu />
+          </button>
+
+          <div className="ml-auto flex items-center gap-4">
+            <div className="flex items-center gap-3 bg-gray-900 px-3 py-1.5 rounded-full border border-gray-800">
+              <div className="p-1.5 bg-gray-800 rounded-full text-purple-400">
+                <UserIcon size={16} />
+              </div>
+              <div className="text-sm">
+                <div className="font-semibold">{user?.name || "Admin"}</div>
+                <div className="text-xs text-gray-400 uppercase">
+                  {user?.role || "ADMIN"}
                 </div>
               </div>
-            </Dropdown>
-          </Space>
-        </Header>
+            </div>
+          </div>
+        </header>
 
-        <Content className="m-6 p-0">
-          <div className="p-6 min-h-[360px] bg-white rounded-lg">
+        {/* PAGE CONTENT */}
+        <main className="flex-1 overflow-y-auto p-6 bg-black">
+          <div className="max-w-7xl mx-auto">
             <Outlet />
           </div>
-        </Content>
-      </Layout>
-    </Layout>
+        </main>
+      </div>
+    </div>
   );
 };
 
