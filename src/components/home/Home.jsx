@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState,useEffect } from "react";
 import {
   Dumbbell,
   Sparkles,
@@ -7,8 +7,60 @@ import {
   Menu,
   X,
 } from "lucide-react";
+import api from "../../api2"
+import { getToken, onMessage } from "firebase/messaging";
+import { messaging } from "../../firebase";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
+
+
 const Home = () => {
+  useEffect(() => {
+  let unsubscribe;
+
+  async function setupFCM() {
+    try {
+      // 1️⃣ Ask permission
+      const permission = await Notification.requestPermission();
+      if (permission !== "granted") return;
+
+      // 2️⃣ Get FCM token
+      const token = await getToken(messaging, {
+        vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
+      });
+
+      if (!token) return;
+
+      // 3️⃣ Send token to backend
+      await api.post("fcm-token/", {
+        fcm_token: token,
+      });
+
+      console.log("FCM token sent to backend");
+    } catch (err) {
+      console.error("FCM setup failed:", err);
+    }
+  }
+
+  setupFCM();
+
+  // 4️⃣ Foreground message handler
+  unsubscribe = onMessage(messaging, (payload) => {
+    console.log("Foreground notification:", payload);
+
+    if (payload?.notification) {
+      alert(
+        payload.notification.title +
+          "\n" +
+          payload.notification.body
+      );
+    }
+  });
+
+  return () => {
+    if (unsubscribe) unsubscribe();
+  };
+}, []);
+
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();

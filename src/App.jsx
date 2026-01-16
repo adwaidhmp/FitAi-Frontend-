@@ -57,16 +57,17 @@ import BuyPremium from "./components/user/BuyPremium";
 import RequirePremium from "./components/user_routes/PremiumRoute";
 
 function App() {
-    const dispatch = useDispatch();
+  const dispatch = useDispatch();
   const { isAuthenticated } = useSelector((state) => state.auth);
 
-  // 1️⃣ Restore user/profile after refresh
+  // Restore user/profile after refresh
   useEffect(() => {
     if (isAuthenticated) {
       dispatch(fetchProfile());
     }
   }, [isAuthenticated, dispatch]);
   useGlobalCallSocket();
+
   return (
     <>
       {/* 🔔 GLOBAL INCOMING CALL POPUP */}
@@ -90,12 +91,18 @@ function App() {
         <Route path="/premium-plans" element={<PremiumPlans />} />
         <Route path="/buy-premium/:plan" element={<BuyPremium />} />
 
-        {/* USER */}
+        {/* ================= USER ================= */}
+
+        {/* ✅ PUBLIC USER HOME (INDEX ONLY) */}
+        <Route path="home" element={<Home />}>
+          <Route index element={<HomeLanding />} />
+        </Route>
+
+        {/* 🔒 PROTECTED USER ROUTES (UNCHANGED) */}
         <Route element={<RequireProfile />}>
           <Route path="/profile_form" element={<ProfileForm />} />
 
           <Route path="home" element={<Home />}>
-            <Route index element={<HomeLanding />} />
             <Route path="diet" element={<DietPlanSlider />} />
             <Route path="exercise" element={<ExerciseSlider />} />
             <Route path="progress-dashboard" element={<ProgressDashboard />} />
@@ -110,24 +117,25 @@ function App() {
           </Route>
         </Route>
 
-        {/* TRAINER */}
-        <Route element={<RequireTrainerProfile />}>
-          <Route path="/trainer-profile" element={<TrainerProfilePage />} />
-          <Route
-            path="/trainer_profile_form"
-            element={<TrainerProfileForm />}
-          />
-          
-          {/* TRAINER HOME LAYOUT */}
-          <Route path="trainer-home" element={<TrainerLayout />}>
-             <Route index element={<TrainerHome />} />
-             <Route path="clients" element={<ConfirmedClients />} />
-             <Route path="client-request" element={<PendingRequests />} />
-             <Route path="chat-call" element={<TrainerChat />} />
-             <Route path="trainer-profile" element={<TrainerProfilePage />} />
-          </Route>
+        {/* ================= TRAINER ================= */}
+
+        {/* ✅ PUBLIC TRAINER HOME (INDEX ONLY) */}
+        <Route path="trainer-home" element={<TrainerLayout />}>
+          <Route index element={<TrainerHome />} />
         </Route>
 
+        {/* 🔒 PROTECTED TRAINER ROUTES (UNCHANGED) */}
+        <Route element={<RequireTrainerProfile />}>
+          <Route path="/trainer-profile" element={<TrainerProfilePage />} />
+          <Route path="/trainer_profile_form" element={<TrainerProfileForm />} />
+
+          <Route path="trainer-home" element={<TrainerLayout />}>
+            <Route path="clients" element={<ConfirmedClients />} />
+            <Route path="client-request" element={<PendingRequests />} />
+            <Route path="chat-call" element={<TrainerChat />} />
+            <Route path="trainer-profile" element={<TrainerProfilePage />} />
+          </Route>
+        </Route>
         {/* ADMIN */}
         <Route element={<AdminProtectedRoute />}>
           <Route path="/admin" element={<AdminLayout />}>
@@ -135,7 +143,7 @@ function App() {
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="users" element={<UserManagement />} />
             <Route path="trainers" element={<TrainerManagement />} />
-            <Route path="premium-plans" element={<AdminPremiumPlans/>}/>
+            <Route path="premium-plans" element={<AdminPremiumPlans />} />
           </Route>
         </Route>
 
