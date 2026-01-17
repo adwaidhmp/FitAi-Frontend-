@@ -1,7 +1,8 @@
 import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { ShieldCheck, CreditCard, X, Lock, Loader2 } from "lucide-react";
+import { ShieldCheck, CreditCard, X, Lock } from "lucide-react";
+import Loading from "../Loading";
 
 import {
   createPremiumOrder,
@@ -124,10 +125,7 @@ const BuyPremium = () => {
 
                 <div className="p-8">
                      {loading ? (
-                         <div className="flex flex-col items-center justify-center py-10">
-                             <Loader2 size={48} className="text-purple-500 animate-spin mb-4" />
-                             <p className="text-gray-400">Preparing your order...</p>
-                         </div>
+                         <Loading />
                      ) : error ? (
                          <div className="text-center py-8">
                              <div className="bg-red-900/20 text-red-400 p-4 rounded-xl border border-red-900/50 mb-4 inline-block">

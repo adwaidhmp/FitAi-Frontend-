@@ -10,6 +10,7 @@ import {
   X,
   Award
 } from "lucide-react";
+import Loading from "../Loading";
 import {
   fetchTrainers,
   fetchTrainerDetail,
@@ -98,7 +99,7 @@ const TrainerManagement = () => {
                 className="p-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors"
                 disabled={loadingTrainers}
             >
-                <RefreshCw size={20} className={loadingTrainers ? "animate-spin" : ""} />
+                {loadingTrainers ? <Loading small /> : <RefreshCw size={20} />}
             </button>
         </div>
       </div>

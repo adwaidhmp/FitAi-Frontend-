@@ -29,6 +29,7 @@ import {
   CheckCheck,
   Trash2,
 } from "lucide-react";
+import Loading from "../Loading";
 
 import { Modal, message } from "antd";
 const { confirm } = Modal;
@@ -257,7 +258,7 @@ const TrainerChat = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-black text-gray-300">
-        Loading trainers...
+        <Loading />
       </div>
     );
   }

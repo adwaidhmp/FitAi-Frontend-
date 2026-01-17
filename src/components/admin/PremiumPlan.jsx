@@ -9,6 +9,7 @@ import {
   CreditCard,
   DollarSign
 } from "lucide-react";
+import Loading from "../Loading";
 
 import {
   fetchPremiumPlans,
@@ -167,7 +168,7 @@ const AdminPremiumPlans = () => {
                             className="flex-1 py-2 px-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
                         >
                             {loading ? (
-                                <span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></span>
+                                <Loading small />
                             ) : (
                                 <Save size={18} />
                             )}

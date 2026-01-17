@@ -7,7 +7,6 @@ import {
   Dumbbell,
   Eye,
   EyeOff,
-  Loader2,
   AlertCircle,
   UserPlus,
   Brain,
@@ -20,6 +19,7 @@ import {
   googleLogin,
   clearError,
 } from "../../redux/user_slices/authSlice";
+import Loading from "../Loading";
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
@@ -280,7 +280,7 @@ const Login = () => {
                 >
                   {loading ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <Loading small />
                       Signing In...
                     </>
                   ) : (
@@ -308,7 +308,7 @@ const Login = () => {
                 >
                   {isGoogleLoading && (
                     <div className="flex items-center justify-center py-2.5 bg-gray-800 rounded-lg">
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <Loading small />
                     </div>
                   )}
                 </div>

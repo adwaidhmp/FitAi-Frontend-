@@ -5,6 +5,7 @@ import {
   clearTrainerUserOverview,
 } from "../../redux/trainer_slices/trainerUserOverviewSlice";
 import { X } from "lucide-react";
+import Loading from "../Loading";
 
 const TrainerUserOverviewModal = ({ userId, onClose }) => {
   const dispatch = useDispatch();
@@ -33,7 +34,7 @@ const TrainerUserOverviewModal = ({ userId, onClose }) => {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
         <div className="bg-gray-900 text-white px-6 py-4 rounded-xl">
-          Loading user details...
+          <Loading className="min-h-0 py-2" />
         </div>
       </div>
     );

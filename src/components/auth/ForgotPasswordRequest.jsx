@@ -2,7 +2,8 @@
 import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { Mail, Loader2, CheckCircle } from "lucide-react";
+import { Mail, CheckCircle } from "lucide-react";
+import Loading from "../Loading";
 import { requestPasswordChangeOtp } from "../../redux/user_slices/authSlice.jsx";
 
 const ForgotPasswordRequest = () => {
@@ -69,7 +70,7 @@ const ForgotPasswordRequest = () => {
               className="w-full py-3 bg-gray-800 hover:bg-gray-700 rounded-xl"
             >
               {loading ? (
-                <Loader2 className="w-5 h-5 animate-spin mx-auto" />
+                <Loading small />
               ) : (
                 "Resend OTP"
               )}
@@ -146,7 +147,7 @@ const ForgotPasswordRequest = () => {
             >
               {loading ? (
                 <div className="flex items-center justify-center gap-2">
-                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <Loading small />
                   Sending...
                 </div>
               ) : (

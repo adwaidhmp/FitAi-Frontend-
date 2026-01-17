@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchUserProfile } from "../../redux/user_slices/profileSlice.jsx";
+import Loading from "../Loading.jsx";
 
 const PROFILE_FORM_PATH = "/profile_form";
 
@@ -43,13 +44,7 @@ const RequireProfile = () => {
     profileLoading ||
     (isAuthenticated && !profile && !profileError)
   ) {
-    return (
-      <div className="w-full h-screen flex items-center justify-center bg-black text-gray-300">
-        <span className="text-sm">
-          Preparing your personalized experience...
-        </span>
-      </div>
-    );
+    return <Loading />;
   }
 
   // 3. Logic for Profile Status

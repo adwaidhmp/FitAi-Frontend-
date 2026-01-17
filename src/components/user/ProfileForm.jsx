@@ -7,7 +7,8 @@ import {
   clearProfileError,
   fetchProfileChoices,
 } from "../../redux/user_slices/profileSlice.jsx";
-import { Loader2, AlertCircle } from "lucide-react";
+import { AlertCircle } from "lucide-react";
+import Loading from "../Loading";
 
 const FALLBACK = {
   gender: [
@@ -553,7 +554,7 @@ const ProfileForm = () => {
             >
               {loading ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loading small />
                   Saving profile...
                 </>
               ) : (

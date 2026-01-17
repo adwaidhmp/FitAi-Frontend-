@@ -3,6 +3,7 @@ import React, { useEffect } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchTrainerProfile } from "../../redux/trainer_slices/trainerProfileSlice.jsx";
+import Loading from "../Loading.jsx";
 
 const TRAINER_PROFILE_FORM_PATH = "/trainer_profile_form";
 
@@ -54,11 +55,7 @@ const RequireTrainerProfile = () => {
     loadingProfile ||
     (isAuthenticated && isTrainer && !profile && !trainerNeedsSetup)
   ) {
-    return (
-      <div className="w-full h-screen flex items-center justify-center bg-black text-gray-300">
-        <span className="text-sm">Preparing trainer workspace...</span>
-      </div>
-    );
+    return <Loading />;
   }
 
   // 4) If trainer profile is required, redirect to the profile form (unless already there)

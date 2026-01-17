@@ -3,7 +3,6 @@ import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import {
-  Loader2,
   AlertCircle,
   UploadCloud,
   FileText,
@@ -16,6 +15,7 @@ import {
   clearTrainerErrors,
   // fetchTrainerCertificates,
 } from "../../redux/trainer_slices/trainerProfileSlice"; // adjust path if needed
+import Loading from "../Loading";
 
 const FALLBACK = {
   specialties: [
@@ -307,7 +307,7 @@ const TrainerProfileForm = () => {
             >
               {loading || uploading ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loading small />
                   Saving...
                 </>
               ) : (

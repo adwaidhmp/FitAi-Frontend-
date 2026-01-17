@@ -8,7 +8,6 @@ import {
   Edit,
   Save,
   X,
-  Loader2,
   AlertCircle,
   Lock,
   Target,
@@ -28,6 +27,7 @@ import {
   clearTrainerErrors,
 } from "../../redux/trainer_slices/trainerProfileSlice";
 import { logoutUser } from "../../redux/user_slices/authSlice";
+import Loading from "../Loading";
 
 // FIELD config for trainer personal/profile
 const INFO_FIELD_CONFIG = {
@@ -268,12 +268,7 @@ const TrainerProfilePage = () => {
 
   if (loading && !combined) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 text-purple-500 animate-spin mx-auto mb-4" />
-          <p className="text-gray-400">Loading trainer profile...</p>
-        </div>
-      </div>
+      <Loading />
     );
   }
 
@@ -409,7 +404,7 @@ const TrainerProfilePage = () => {
                         className="flex items-center gap-2 px-4 py-2 bg-linear-to-r from-green-600 to-emerald-600 rounded-xl"
                       >
                         {isSaving ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <Loading small />
                         ) : (
                           <Save className="w-4 h-4" />
                         )}
@@ -503,7 +498,7 @@ const TrainerProfilePage = () => {
                         className="flex items-center gap-2 px-4 py-2 bg-linear-to-r from-green-600 to-emerald-600 rounded-xl"
                       >
                         {isSaving ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <Loading small />
                         ) : (
                           <Save className="w-4 h-4" />
                         )}

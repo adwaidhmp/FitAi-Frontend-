@@ -2,7 +2,8 @@
 import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { Lock, Mail, Loader2, CheckCircle, Eye, EyeOff } from "lucide-react";
+import { Lock, Mail, CheckCircle, Eye, EyeOff } from "lucide-react";
+import Loading from "../Loading";
 import {
   changePassword,
   requestPasswordChangeOtp,
@@ -193,7 +194,7 @@ const ForgotPasswordConfirm = () => {
             >
               {loading ? (
                 <div className="flex items-center justify-center gap-2">
-                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <Loading small />
                   Processing...
                 </div>
               ) : (

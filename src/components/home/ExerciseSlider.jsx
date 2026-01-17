@@ -9,6 +9,7 @@ import {
   XCircle,
   RefreshCw,
 } from "lucide-react";
+import Loading from "../Loading";
 
 import {
   fetchCurrentWorkout,
@@ -134,7 +135,7 @@ const ExerciseSlider = () => {
         >
           {generating ? (
             <span className="flex items-center gap-2">
-              <RefreshCw className="w-4 h-4 animate-spin" /> Starting...
+              <Loading small /> Starting...
             </span>
           ) : (
             "Generate Workout Plan"

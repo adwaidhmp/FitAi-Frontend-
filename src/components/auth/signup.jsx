@@ -19,6 +19,7 @@ import {
   Target,
   CheckCircle,
 } from "lucide-react";
+import Loading from "../Loading";
 import {
   requestOtp,
   registerUser,
@@ -522,7 +523,7 @@ const Signup = () => {
                     >
                       {loading ? (
                         <>
-                          <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          <Loading small />
                           Sending...
                         </>
                       ) : (
@@ -537,7 +538,7 @@ const Signup = () => {
                     >
                       {loading ? (
                         <>
-                          <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          <Loading small />
                           Creating...
                         </>
                       ) : (

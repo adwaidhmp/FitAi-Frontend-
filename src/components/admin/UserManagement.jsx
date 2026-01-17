@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   X
 } from "lucide-react";
+import Loading from "../Loading";
 import {
   fetchUsers,
   updateUserStatus,
@@ -70,7 +71,7 @@ const UserManagement = () => {
                 className="p-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors"
                 disabled={loadingUsers}
             >
-                <RefreshCw size={20} className={loadingUsers ? "animate-spin" : ""} />
+                {loadingUsers ? <Loading small /> : <RefreshCw size={20} />}
             </button>
         </div>
       </div>
