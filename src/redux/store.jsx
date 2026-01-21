@@ -16,6 +16,7 @@ import trainerCallReducer from "./trainer_slices/trainerCallSlice.jsx";
 import trainerUserOverviewReducer from "./trainer_slices/trainerUserOverviewSlice.jsx";
 import adminPremiumReducer from "./admin_slices/admin_premiumPlanSlice.jsx";
 import premiumReducer from "./user_slices/premiumSlice.jsx";
+import aiReducer from "./rag_agent_slcie/agent_slice.jsx";
 /* -------------------------------------------------------
    Combine all reducers
 ------------------------------------------------------- */
@@ -36,6 +37,7 @@ const appReducer = combineReducers({
   trainerUserOverview: trainerUserOverviewReducer,
   adminPremium: adminPremiumReducer,
   premium: premiumReducer,
+  ai : aiReducer,
 });
 
 /* -------------------------------------------------------

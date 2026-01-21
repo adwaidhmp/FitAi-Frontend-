@@ -94,12 +94,21 @@ const ExerciseSlider = () => {
   }
 
   /* =========================
-     IDLE / NO PLAN
+     IDLE / NO PLAN / FAILED
   ========================= */
   // If we are 'idle', OR 'failed', OR 'ready' but no plan data (fallback)
-  if (status === "idle" || (status === "ready" && !plan)) {
+  if (status === "idle" || status === "failed" || (status === "ready" && !plan)) {
     return (
       <div className="bg-gray-900/50 border border-gray-800 rounded-2xl p-8 text-center">
+        
+        {/* FAILED STATE ALERT */}
+        {status === "failed" && (
+          <div className="mb-6 mx-auto max-w-md p-4 bg-red-900/20 border border-red-500/50 rounded-xl flex items-center gap-3 text-red-200 justify-center">
+            <XCircle className="w-5 h-5 shrink-0" />
+            <span className="text-sm font-medium">Generation failed. Please try again.</span>
+          </div>
+        )}
+
         <div className="flex justify-center mb-4">
           <div className="p-4 bg-blue-600 rounded-2xl">
             <Zap className="w-8 h-8" />
@@ -138,7 +147,7 @@ const ExerciseSlider = () => {
               <Loading small /> Starting...
             </span>
           ) : (
-            "Generate Workout Plan"
+            status === "failed" ? "Try Again" : "Generate Workout Plan"
           )}
         </button>
       </div>

@@ -1,5 +1,5 @@
-import React from "react";
-import { useSelector } from "react-redux";
+import React, { useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import {
   Flame,
@@ -12,14 +12,29 @@ import {
   MessageSquare,
   Sparkles,
 } from "lucide-react";
+import { fetchDailyProgress } from "../../redux/user_slices/dietAnalyticsSlice";
+import { fetchUserProfile } from "../../redux/user_slices/profileSlice";
 
 const HomeLanding = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const { data: profile } = useSelector((state) => state.profile);
+  const { daily, loading } = useSelector((state) => state.progress);
+
+  useEffect(() => {
+    dispatch(fetchDailyProgress());
+    if (!profile) {
+      dispatch(fetchUserProfile());
+    }
+  }, [dispatch, profile]);
 
   const userName = user?.name || "Member";
-  const userWeight = profile?.weight || "--";
+  const userWeight = profile?.weight_kg || "--";
+
+  const caloriesBurned = daily?.workout?.calories_burnt ?? 0;
+  const caloriesIntake = daily?.diet?.calories ?? 0;
+  const protein = daily?.diet?.protein ?? 0;
 
   return (
     <div className="text-white">
@@ -52,15 +67,15 @@ const HomeLanding = () => {
           {[
             {
               label: "Calories Burned",
-              value: "0", // Placeholder until connected to tracker
+              value: caloriesBurned,
               color: "text-orange-400",
               icon: <Flame />,
             },
             {
-              label: "Workouts Done",
-              value: "0", // Placeholder
+              label: "Calories Intake",
+              value: caloriesIntake,
               color: "text-blue-400",
-              icon: <Dumbbell />,
+              icon: <Utensils />,
             },
             {
               label: "Current Weight",
@@ -69,10 +84,10 @@ const HomeLanding = () => {
               icon: <Scale />,
             },
             {
-              label: "Day Streak",
-              value: "1", // Placeholder
+              label: "Protein",
+              value: `${protein}g`,
               color: "text-yellow-400",
-              icon: <Trophy />,
+              icon: <Dumbbell />,
             },
           ].map((stat, index) => (
             <div
@@ -81,7 +96,7 @@ const HomeLanding = () => {
             >
               <div className="flex items-center justify-between mb-2">
                 <div className={`text-2xl font-bold ${stat.color}`}>
-                  {stat.value}
+                  {loading.daily ? <span className="text-sm animate-pulse">...</span> : stat.value}
                 </div>
                 <span className={`${stat.color} opacity-80`}>{stat.icon}</span>
               </div>

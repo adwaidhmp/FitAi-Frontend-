@@ -11,7 +11,7 @@ import api from "../../api2"
 import { getToken, onMessage } from "firebase/messaging";
 import { messaging } from "../../firebase";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
-
+import AiAgent from "./ai_agent";
 
 const Home = () => {
   useEffect(() => {
@@ -211,6 +211,7 @@ const Home = () => {
       <footer className="border-t border-gray-800 py-6 text-center text-gray-500 text-sm">
         © 2024 FitAI. AI-Powered Fitness & Nutrition Platform
       </footer>
+      <AiAgent />
     </div>
   );
 };
